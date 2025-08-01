@@ -41,17 +41,8 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     console.log('Token extracted:', !!token);
 
-    // Create client with user's token for RLS
-    const userSupabase = createClient(supabaseUrl, supabaseAnon, {
-      global: {
-        headers: {
-          authorization: authHeader,
-        },
-      },
-    });
-
-    // Get authenticated user using the token directly
-    const { data: userData, error: authError } = await userSupabase.auth.getUser(token);
+    // Use service role client to validate the JWT token
+    const { data: userData, error: authError } = await supabase.auth.getUser(token);
     if (authError || !userData.user) {
       console.error('Auth error:', authError);
       console.error('Auth header was:', authHeader);
