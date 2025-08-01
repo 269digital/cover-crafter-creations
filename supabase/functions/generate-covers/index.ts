@@ -92,19 +92,81 @@ serve(async (req) => {
 
     console.log(`Credit deducted. User now has ${profile.credits - 1} credits`);
 
-    // For now, return mock generated covers
-    // In a real implementation, you would call an AI image generation API here
-    const mockImages = [
-      'https://via.placeholder.com/400x600/FF6B6B/FFFFFF?text=Cover+1',
-      'https://via.placeholder.com/400x600/4ECDC4/FFFFFF?text=Cover+2', 
-      'https://via.placeholder.com/400x600/45B7D1/FFFFFF?text=Cover+3',
-      'https://via.placeholder.com/400x600/96CEB4/FFFFFF?text=Cover+4'
+    // Get Runware API key
+    const runwareApiKey = Deno.env.get('RUNWARE_API_KEY');
+    if (!runwareApiKey) {
+      throw new Error('Runware API key not configured. Please add RUNWARE_API_KEY to your Supabase secrets.');
+    }
+
+    // Generate AI images using Runware
+    console.log('Generating covers with AI...');
+    
+    // Create detailed prompts for book covers
+    const basePrompt = `Professional book cover design for "${title}" by ${author}, ${genre} genre, ${style} style. ${description}. High quality, publishable book cover, 400x600 aspect ratio`;
+    
+    const prompts = [
+      `${basePrompt}, dramatic lighting, professional typography space`,
+      `${basePrompt}, artistic composition, bold design elements`,
+      `${basePrompt}, cinematic atmosphere, premium book cover design`,
+      `${basePrompt}, elegant layout, sophisticated visual style`
     ];
+
+    const generatedImages = [];
+
+    for (let i = 0; i < 4; i++) {
+      try {
+        console.log(`Generating image ${i + 1} with prompt: ${prompts[i]}`);
+        
+        const response = await fetch('https://api.runware.ai/v1', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify([
+            {
+              taskType: "authentication",
+              apiKey: runwareApiKey
+            },
+            {
+              taskType: "imageInference",
+              taskUUID: crypto.randomUUID(),
+              positivePrompt: prompts[i],
+              width: 400,
+              height: 600,
+              model: "runware:100@1",
+              numberResults: 1,
+              outputFormat: "WEBP",
+              CFGScale: 1,
+              scheduler: "FlowMatchEulerDiscreteScheduler"
+            }
+          ])
+        });
+
+        if (!response.ok) {
+          throw new Error(`Runware API error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log(`Image ${i + 1} generation result:`, result);
+        
+        if (result.data && result.data.length > 1 && result.data[1].imageURL) {
+          generatedImages.push(result.data[1].imageURL);
+        } else {
+          console.error(`Failed to generate image ${i + 1}:`, result);
+          generatedImages.push(`https://via.placeholder.com/400x600/FF6B6B/FFFFFF?text=Error+${i + 1}`);
+        }
+      } catch (error) {
+        console.error(`Error generating image ${i + 1}:`, error);
+        generatedImages.push(`https://via.placeholder.com/400x600/FF6B6B/FFFFFF?text=Error+${i + 1}`);
+      }
+    }
+
+    console.log('Generated images:', generatedImages);
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Generated ${mockImages.length} covers for "${title}"`,
-      images: mockImages,
+      message: `Generated ${generatedImages.length} covers for "${title}"`,
+      images: generatedImages,
       creditsRemaining: profile.credits - 1
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
