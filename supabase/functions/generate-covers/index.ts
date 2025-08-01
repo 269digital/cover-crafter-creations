@@ -23,8 +23,10 @@ serve(async (req) => {
     // Get authenticated user
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
+    const { data, error: authError } = await supabaseClient.auth.getUser(token);
     const user = data.user;
+    
+    console.log(`Auth result - User: ${user?.id || 'null'}, Error: ${authError?.message || 'none'}`);
     
     if (!user) {
       throw new Error("User not authenticated");
@@ -32,13 +34,16 @@ serve(async (req) => {
 
     // Parse request body
     const { title, author, genre, style, description } = await req.json();
+    console.log(`Request from user ${user.id} for: ${title} by ${author}`);
 
-    // Check user credits first
+    // Check user credits first using maybeSingle to avoid the single() error
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
       .select("credits")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
+
+    console.log(`Profile query result - Data: ${profile ? JSON.stringify(profile) : 'null'}, Error: ${profileError?.message || 'none'}`);
 
     if (profileError) {
       console.error("Error fetching profile:", profileError);
@@ -46,7 +51,8 @@ serve(async (req) => {
     }
 
     if (!profile) {
-      throw new Error("User profile not found");
+      console.error(`No profile found for user ${user.id}`);
+      throw new Error("User profile not found. Please ensure your account is properly set up.");
     }
 
     if (profile.credits < 1) {
