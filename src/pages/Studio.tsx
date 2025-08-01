@@ -141,7 +141,7 @@ const Studio = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Palette className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Cover Crafter Studio</h1>
+            <h1 className="text-xl font-bold">Covers by AI Studio</h1>
           </div>
           <div className="flex items-center space-x-4">
             <Badge variant="secondary" className="px-3 py-1">

@@ -59,11 +59,11 @@ serve(async (req) => {
       customer: customerId,
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `Cover Crafter - ${packageName}`,
-              description: `${credits} AI-generated book cover credits`,
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: `Covers by AI - ${packageName}`,
+                description: `${credits} AI-generated book cover credits`,
             },
             unit_amount: Math.round(parseFloat(price.replace('$', '')) * 100), // Convert to cents
           },

@@ -83,7 +83,7 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-creative">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Cover Crafter
+            Covers by AI
           </CardTitle>
           <CardDescription>
             Create stunning book covers with AI
