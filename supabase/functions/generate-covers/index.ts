@@ -75,7 +75,7 @@ serve(async (req) => {
 
     // Generate 4 variations using Ideogram API
     const ideogramApiKey = Deno.env.get("IDEOGRAM_API_KEY");
-    console.log(`Using Ideogram API key: ${ideogramApiKey ? 'Key present' : 'Key missing'}`);
+    console.log(`Using Ideogram API key: ${ideogramApiKey ? `Key present (${ideogramApiKey.length} chars)` : 'Key missing'}`);
     
     if (!ideogramApiKey) {
       throw new Error("IDEOGRAM_API_KEY environment variable is not set");
@@ -97,7 +97,7 @@ serve(async (req) => {
           },
         };
         
-        console.log(`Request body for variation ${i + 1}:`, JSON.stringify(requestBody, null, 2));
+        console.log(`Making request to Ideogram API for variation ${i + 1}`);
         
         const response = await fetch("https://api.ideogram.ai/generate", {
           method: "POST",
@@ -108,25 +108,39 @@ serve(async (req) => {
           body: JSON.stringify(requestBody),
         });
 
-        console.log(`Response status for variation ${i + 1}: ${response.status}`);
+        console.log(`Ideogram API response status for variation ${i + 1}: ${response.status}`);
+        
+        const responseText = await response.text();
+        console.log(`Ideogram API response body for variation ${i + 1}: ${responseText.substring(0, 500)}`);
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Ideogram API error for variation ${i + 1}:`, errorText);
+          console.error(`Ideogram API error for variation ${i + 1} (${response.status}): ${responseText}`);
+          // If we get a critical error on the first attempt, throw it
+          if (i === 0 && response.status === 401) {
+            throw new Error(`Ideogram API authentication failed: ${responseText}`);
+          }
           continue;
         }
 
-        const result = await response.json();
-        console.log(`API response for variation ${i + 1}:`, JSON.stringify(result, null, 2));
-        
-        if (result.data && result.data.length > 0) {
-          imageUrls.push(result.data[0].url);
-          console.log(`Generated variation ${i + 1}: ${result.data[0].url}`);
-        } else {
-          console.error(`No data returned for variation ${i + 1}:`, result);
+        try {
+          const result = JSON.parse(responseText);
+          console.log(`Parsed response for variation ${i + 1}:`, JSON.stringify(result, null, 2));
+          
+          if (result.data && result.data.length > 0) {
+            imageUrls.push(result.data[0].url);
+            console.log(`Generated variation ${i + 1}: ${result.data[0].url}`);
+          } else {
+            console.error(`No data returned for variation ${i + 1}:`, result);
+          }
+        } catch (parseError) {
+          console.error(`Failed to parse JSON response for variation ${i + 1}:`, parseError, 'Raw response:', responseText);
         }
       } catch (error) {
         console.error(`Error generating variation ${i + 1}:`, error);
+        // If it's the first variation and we get a critical error, re-throw it
+        if (i === 0 && (error.message.includes('authentication') || error.message.includes('API key'))) {
+          throw error;
+        }
       }
     }
 
