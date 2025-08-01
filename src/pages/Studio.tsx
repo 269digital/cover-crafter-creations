@@ -50,10 +50,11 @@ const Studio = () => {
   ];
 
   const handleGenerate = async () => {
-    if (credits === 0) {
-      navigate("/buy-credits");
-      return;
-    }
+    // Credit check temporarily disabled
+    // if (credits === 0) {
+    //   navigate("/buy-credits");
+    //   return;
+    // }
 
     if (!genre || !style || !bookTitle || !authorName || !description) {
       toast({
@@ -144,7 +145,8 @@ const Studio = () => {
             <h1 className="text-xl font-bold">Covers by AI Studio</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <Badge variant="secondary" className="px-3 py-1">
+            {/* Credit system temporarily disabled */}
+            {/* <Badge variant="secondary" className="px-3 py-1">
               <CreditCard className="h-4 w-4 mr-1" />
               Credits: {credits}
             </Badge>
@@ -163,7 +165,7 @@ const Studio = () => {
               onClick={() => navigate("/buy-credits")}
             >
               Buy Credits
-            </Button>
+            </Button> */}
             <Button 
               variant="outline" 
               onClick={() => navigate("/my-covers")}
@@ -258,8 +260,8 @@ const Studio = () => {
                 />
               </div>
 
-              {/* Credit Warning */}
-              {credits === 0 && (
+              {/* Credit Warning - temporarily disabled */}
+              {/* {credits === 0 && (
                 <Alert>
                   <CreditCard className="h-4 w-4" />
                   <AlertDescription>
@@ -273,21 +275,21 @@ const Studio = () => {
                     </Button>
                   </AlertDescription>
                 </Alert>
-              )}
+              )} */}
 
               {/* Generate Button */}
               <Button 
                 onClick={handleGenerate}
                 className="w-full"
                 size="lg"
-                disabled={generating || credits === 0}
+                disabled={generating}
               >
                 {generating ? (
                   "Generating..."
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Cover (1 Credit)
+                    Generate Cover (Free - Testing Mode)
                   </>
                 )}
               </Button>

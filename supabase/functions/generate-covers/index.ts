@@ -56,6 +56,7 @@ serve(async (req) => {
     const { title, author, genre, style, description } = await req.json();
     console.log(`Request from user ${userId} for: ${title} by ${author}`);
 
+    // Credit check temporarily disabled for testing
     // Get user profile and check credits - using maybeSingle to avoid errors
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -65,19 +66,21 @@ serve(async (req) => {
 
     if (profileError) {
       console.error('Profile error:', profileError);
-      throw new Error('Failed to fetch user profile');
+      // Don't throw error for testing mode
+      console.log('Profile check disabled for testing');
     }
 
     if (!profile) {
       console.error('No profile found for user:', userId);
-      throw new Error('User profile not found. Please ensure your account is properly set up.');
+      // Don't throw error for testing mode
+      console.log('Profile check disabled for testing');
     }
 
-    console.log(`User has ${profile.credits} credits`);
+    console.log(`Credit check disabled - testing mode enabled`);
 
-    if (profile.credits < 1) {
-      throw new Error('Insufficient credits. Please purchase more credits to generate covers.');
-    }
+    // if (profile.credits < 1) {
+    //   throw new Error('Insufficient credits. Please purchase more credits to generate covers.');
+    // }
 
     // Get Ideogram API key
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY');
@@ -125,24 +128,24 @@ serve(async (req) => {
         const generatedImages = result.data.map((item: any) => item.url);
         console.log('Generated images:', generatedImages);
 
-        // Only deduct credit AFTER successful generation
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ credits: profile.credits - 1 })
-          .eq('user_id', userId);
+        // Credit deduction temporarily disabled for testing
+        // const { error: updateError } = await supabase
+        //   .from('profiles')
+        //   .update({ credits: profile.credits - 1 })
+        //   .eq('user_id', userId);
 
-        if (updateError) {
-          console.error('Error updating credits:', updateError);
-          // Still return images even if credit update fails
-        }
+        // if (updateError) {
+        //   console.error('Error updating credits:', updateError);
+        //   // Still return images even if credit update fails
+        // }
 
-        console.log(`Credit deducted. User now has ${profile.credits - 1} credits`);
+        console.log(`Credit deduction disabled - testing mode`);
 
         return new Response(JSON.stringify({
           success: true,
-          message: `Generated ${generatedImages.length} covers for "${title}"`,
+          message: `Generated ${generatedImages.length} covers for "${title}" (Testing Mode)`,
           images: generatedImages,
-          creditsRemaining: profile.credits - 1
+          creditsRemaining: 999
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
