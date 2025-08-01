@@ -149,6 +149,16 @@ const Studio = () => {
               Credits: {credits}
             </Badge>
             <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                console.log('Manual refresh clicked, current credits:', credits);
+                refreshCredits();
+              }}
+            >
+              🔄
+            </Button>
+            <Button 
               variant="outline" 
               onClick={() => navigate("/buy-credits")}
             >
