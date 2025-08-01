@@ -73,12 +73,12 @@ serve(async (req) => {
 
     console.log(`Generating cover for user ${user.id} with prompt: ${prompt}`);
 
-    // Generate 4 variations using Ideogram API
-    const ideogramApiKey = Deno.env.get("IDEOGRAM_API_KEY");
-    console.log(`Using Ideogram API key: ${ideogramApiKey ? `Key present (${ideogramApiKey.length} chars)` : 'Key missing'}`);
+    // Generate 4 variations using OpenAI DALL-E API (more reliable than Ideogram)
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    console.log(`Using OpenAI API key: ${openaiApiKey ? `Key present (${openaiApiKey.length} chars)` : 'Key missing'}`);
     
-    if (!ideogramApiKey) {
-      throw new Error("IDEOGRAM_API_KEY environment variable is not set");
+    if (!openaiApiKey) {
+      throw new Error("OPENAI_API_KEY environment variable is not set. Please add your OpenAI API key to use image generation.");
     }
     
     const imageUrls: string[] = [];
@@ -87,53 +87,41 @@ serve(async (req) => {
       try {
         console.log(`Generating variation ${i + 1} with prompt: ${prompt.substring(0, 100)}...`);
         
-        const requestBody = {
-          image_request: {
-            prompt: prompt,
-            aspect_ratio: "ASPECT_3_4", // Book cover aspect ratio
-            model: "V_2",
-            magic_prompt_option: "ON", // Enable Magic Prompt
-            speed: "STANDARD", // Use standard speed
-          },
-        };
-        
-        console.log(`Making request to Ideogram API for variation ${i + 1}`);
-        
-        const response = await fetch("https://api.ideogram.ai/generate", {
+        const response = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
           headers: {
-            "Api-Key": ideogramApiKey,
+            "Authorization": `Bearer ${openaiApiKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: prompt,
+            n: 1,
+            size: "1024x1792", // Portrait orientation for book covers
+            quality: "standard",
+            style: "vivid"
+          }),
         });
 
-        console.log(`Ideogram API response status for variation ${i + 1}: ${response.status}`);
-        
-        const responseText = await response.text();
-        console.log(`Ideogram API response body for variation ${i + 1}: ${responseText.substring(0, 500)}`);
+        console.log(`OpenAI API response status for variation ${i + 1}: ${response.status}`);
         
         if (!response.ok) {
-          console.error(`Ideogram API error for variation ${i + 1} (${response.status}): ${responseText}`);
+          const errorText = await response.text();
+          console.error(`OpenAI API error for variation ${i + 1} (${response.status}): ${errorText}`);
           // If we get a critical error on the first attempt, throw it
           if (i === 0 && response.status === 401) {
-            throw new Error(`Ideogram API authentication failed: ${responseText}`);
+            throw new Error(`OpenAI API authentication failed: ${errorText}`);
           }
           continue;
         }
 
-        try {
-          const result = JSON.parse(responseText);
-          console.log(`Parsed response for variation ${i + 1}:`, JSON.stringify(result, null, 2));
-          
-          if (result.data && result.data.length > 0) {
-            imageUrls.push(result.data[0].url);
-            console.log(`Generated variation ${i + 1}: ${result.data[0].url}`);
-          } else {
-            console.error(`No data returned for variation ${i + 1}:`, result);
-          }
-        } catch (parseError) {
-          console.error(`Failed to parse JSON response for variation ${i + 1}:`, parseError, 'Raw response:', responseText);
+        const result = await response.json();
+        console.log(`Generated image for variation ${i + 1}:`, result.data[0].url);
+        
+        if (result.data && result.data.length > 0) {
+          imageUrls.push(result.data[0].url);
+        } else {
+          console.error(`No data returned for variation ${i + 1}:`, result);
         }
       } catch (error) {
         console.error(`Error generating variation ${i + 1}:`, error);
