@@ -32,12 +32,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshCredits = async () => {
     if (!user) return;
     
+    console.log('Refreshing credits for user:', user.id);
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("credits")
         .eq("user_id", user.id)
         .maybeSingle();
+      
+      console.log('Credits query result:', { data, error });
       
       if (error) {
         console.error("Error fetching credits:", error);
@@ -46,6 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data) {
+        console.log('Setting credits to:', data.credits);
         setCredits(data.credits || 0);
       } else {
         console.warn("No profile found for user, setting credits to 0");
