@@ -79,7 +79,8 @@ serve(async (req) => {
               prompt: prompt,
               aspect_ratio: "ASPECT_3_4", // Book cover aspect ratio
               model: "V_2",
-              magic_prompt_option: "AUTO",
+              magic_prompt_option: "ON", // Enable Magic Prompt
+              speed: "STANDARD", // Use standard speed
             },
           }),
         });
