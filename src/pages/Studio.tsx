@@ -83,7 +83,7 @@ const Studio = () => {
       }
 
       if (data?.success) {
-        setGeneratedImages(data.images);
+        setGeneratedImages(data.images || []);
         await refreshCredits(); // Refresh credits to show updated count
         toast({
           title: "Success!",
