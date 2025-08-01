@@ -1,28 +1,17 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Palette, Sparkles, BookOpen, CreditCard } from "lucide-react";
-import { useAuth } from "@/lib/auth";
 
 const Index = () => {
-  const { user, loading } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/studio");
-    }
-  }, [user, loading, navigate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  
+  // Don't use useAuth on the landing page since users aren't logged in yet
+  const handleGetStarted = () => {
+    navigate("/auth");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-hero">
