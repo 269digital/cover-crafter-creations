@@ -32,9 +32,14 @@ serve(async (req) => {
 
     // Get the authorization header and extract user
     const authHeader = req.headers.get('authorization');
+    console.log('Auth header present:', !!authHeader);
     if (!authHeader) {
       throw new Error('No authorization header provided');
     }
+
+    // Extract the JWT token from the authorization header
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Token extracted:', !!token);
 
     // Create client with user's token for RLS
     const userSupabase = createClient(supabaseUrl, supabaseAnon, {
@@ -45,10 +50,11 @@ serve(async (req) => {
       },
     });
 
-    // Get authenticated user
-    const { data: userData, error: authError } = await userSupabase.auth.getUser();
+    // Get authenticated user using the token directly
+    const { data: userData, error: authError } = await userSupabase.auth.getUser(token);
     if (authError || !userData.user) {
       console.error('Auth error:', authError);
+      console.error('Auth header was:', authHeader);
       throw new Error('User not authenticated');
     }
 
