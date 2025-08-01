@@ -8,17 +8,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Palette, Sparkles, CreditCard } from "lucide-react";
+import { Palette, Sparkles, CreditCard, Download, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Studio = () => {
-  const { user, credits, signOut } = useAuth();
+  const { user, credits, signOut, refreshCredits } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [genre, setGenre] = useState("");
+  const [style, setStyle] = useState("");
   const [bookTitle, setBookTitle] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [description, setDescription] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
 
   const genres = [
     "Thriller",
@@ -33,25 +38,95 @@ const Studio = () => {
     "Non-Fiction"
   ];
 
+  const styles = [
+    "Realistic",
+    "Illustrated",
+    "Minimalist",
+    "Vintage",
+    "Modern",
+    "Dark & Moody",
+    "Bright & Colorful",
+    "Abstract"
+  ];
+
   const handleGenerate = async () => {
     if (credits === 0) {
       navigate("/buy-credits");
       return;
     }
 
-    if (!genre || !bookTitle || !authorName || !description) {
-      alert("Please fill in all fields");
+    if (!genre || !style || !bookTitle || !authorName || !description) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields before generating covers.",
+        variant: "destructive",
+      });
       return;
     }
 
     setGenerating(true);
-    
-    // TODO: Implement Ideogram API integration in Phase 3
-    // For now, just simulate the process
-    setTimeout(() => {
+    setGeneratedImages([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-covers', {
+        body: { 
+          title: bookTitle,
+          author: authorName,
+          genre,
+          style,
+          description
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.success) {
+        setGeneratedImages(data.images);
+        await refreshCredits(); // Refresh credits to show updated count
+        toast({
+          title: "Success!",
+          description: data.message,
+        });
+      }
+    } catch (error: any) {
+      console.error('Cover generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate covers. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setGenerating(false);
-      alert("Image generation will be implemented in Phase 3!");
-    }, 2000);
+    }
+  };
+
+  const handleDownload = async (imageUrl: string, index: number) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${bookTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_cover_${index + 1}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Downloaded!",
+        description: `Cover ${index + 1} has been downloaded.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download the cover. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSignOut = async () => {
@@ -116,6 +191,23 @@ const Studio = () => {
                     {genres.map((g) => (
                       <SelectItem key={g} value={g}>
                         {g}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Style Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="style">Select Style</Label>
+                <Select value={style} onValueChange={setStyle}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {styles.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -190,20 +282,50 @@ const Studio = () => {
                 )}
               </Button>
 
-              {/* Results Section - Placeholder for Phase 3 */}
-              <div className="pt-6 border-t">
-                <h3 className="font-semibold mb-4">Generated Covers</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div 
-                      key={i} 
-                      className="aspect-[2/3] bg-muted rounded-lg flex items-center justify-center text-muted-foreground"
-                    >
-                      Cover {i}
-                    </div>
-                  ))}
+              {/* Results Section */}
+              {generatedImages.length > 0 && (
+                <div className="pt-6 border-t">
+                  <h3 className="font-semibold mb-4">Generated Covers</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {generatedImages.map((imageUrl, index) => (
+                      <div key={index} className="relative group">
+                        <img 
+                          src={imageUrl} 
+                          alt={`Generated cover ${index + 1}`}
+                          className="aspect-[2/3] w-full object-cover rounded-lg shadow-sm"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleDownload(imageUrl, index)}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Placeholder when no images */}
+              {!generating && generatedImages.length === 0 && (
+                <div className="pt-6 border-t">
+                  <h3 className="font-semibold mb-4">Generated Covers</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div 
+                        key={i} 
+                        className="aspect-[2/3] bg-muted rounded-lg flex items-center justify-center text-muted-foreground"
+                      >
+                        Cover {i}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
