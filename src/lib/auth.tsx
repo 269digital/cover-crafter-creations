@@ -37,16 +37,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from("profiles")
         .select("credits")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error("Error fetching credits:", error);
+        setCredits(0);
         return;
       }
       
-      setCredits(data?.credits || 0);
+      if (data) {
+        setCredits(data.credits || 0);
+      } else {
+        console.warn("No profile found for user, setting credits to 0");
+        setCredits(0);
+      }
     } catch (error) {
       console.error("Error refreshing credits:", error);
+      setCredits(0);
     }
   };
 
