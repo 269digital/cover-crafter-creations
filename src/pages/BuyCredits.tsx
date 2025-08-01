@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Check, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const BuyCredits = () => {
   const { user, credits, signOut } = useAuth();
@@ -35,9 +36,26 @@ const BuyCredits = () => {
     }
   ];
 
-  const handlePurchase = (packageName: string) => {
-    // TODO: Implement Stripe integration in Phase 2
-    alert(`Stripe integration for ${packageName} will be implemented in Phase 2!`);
+  const handlePurchase = async (packageName: string, credits: number, price: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: { packageName, credits, price }
+      });
+
+      if (error) {
+        console.error('Payment error:', error);
+        alert('Failed to create payment session. Please try again.');
+        return;
+      }
+
+      if (data?.url) {
+        // Open Stripe checkout in a new tab
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Failed to create payment session. Please try again.');
+    }
   };
 
   const handleSignOut = async () => {
@@ -123,7 +141,7 @@ const BuyCredits = () => {
                 <Button 
                   className="w-full" 
                   variant={pkg.popular ? "default" : "outline"}
-                  onClick={() => handlePurchase(pkg.name)}
+                  onClick={() => handlePurchase(pkg.name, pkg.credits, pkg.price)}
                 >
                   Buy Now
                 </Button>
