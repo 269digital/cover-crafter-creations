@@ -89,6 +89,12 @@ const BuyCredits = () => {
             >
               My Covers
             </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate("/verify-payment")}
+            >
+              Verify Payment
+            </Button>
             <Button variant="ghost" onClick={handleSignOut}>
               Sign Out
             </Button>
