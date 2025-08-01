@@ -58,11 +58,21 @@ serve(async (req) => {
           { auth: { persistSession: false } }
         );
 
+        // Get current credits and add new ones
+        const { data: profile } = await supabaseService
+          .from("profiles")
+          .select("credits")
+          .eq("user_id", user.id)
+          .single();
+
+        const currentCredits = profile?.credits || 0;
+        const newCredits = currentCredits + creditsToAdd;
+
         // Update user credits
         const { error } = await supabaseService
           .from("profiles")
           .update({ 
-            credits: creditsToAdd,
+            credits: newCredits,
             stripe_customer_id: session.customer as string
           })
           .eq("user_id", user.id);
