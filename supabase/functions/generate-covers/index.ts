@@ -40,8 +40,13 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    if (profileError || !profile) {
-      throw new Error("Could not fetch user profile");
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
+      throw new Error(`Could not fetch user profile: ${profileError.message}`);
+    }
+
+    if (!profile) {
+      throw new Error("User profile not found");
     }
 
     if (profile.credits < 1) {
