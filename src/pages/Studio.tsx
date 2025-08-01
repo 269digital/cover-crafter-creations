@@ -105,27 +105,31 @@ const Studio = () => {
 
   const handleDownload = async (imageUrl: string, index: number) => {
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `${bookTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_cover_${index + 1}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Create a temporary link to download the image directly
+      // This bypasses CORS by letting the browser handle the download
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `${bookTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_cover_${index + 1}.jpg`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      
+      // Temporarily add to DOM and click
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
       toast({
-        title: "Downloaded!",
-        description: `Cover ${index + 1} has been downloaded.`,
+        title: "Download Started",
+        description: `Cover ${index + 1} download initiated. Check your downloads folder.`,
       });
     } catch (error) {
+      console.error('Download error:', error);
+      // Fallback: open in new tab
+      window.open(imageUrl, '_blank', 'noopener,noreferrer');
+      
       toast({
-        title: "Download Failed",
-        description: "Failed to download the cover. Please try again.",
-        variant: "destructive",
+        title: "Download Alternative",
+        description: "Right-click the image in the new tab and select 'Save image as...'",
       });
     }
   };
