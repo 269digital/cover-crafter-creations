@@ -20,8 +20,14 @@ serve(async (req) => {
 
   try {
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnon) {
+      throw new Error('Missing required environment variables');
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the authorization header and extract user
@@ -31,7 +37,6 @@ serve(async (req) => {
     }
 
     // Create client with user's token for RLS
-    const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')!;
     const userSupabase = createClient(supabaseUrl, supabaseAnon, {
       global: {
         headers: {
@@ -54,15 +59,20 @@ serve(async (req) => {
     const { title, author, genre, style, description } = await req.json();
     console.log(`Request from user ${userId} for: ${title} by ${author}`);
 
-    // Get user profile and check credits
+    // Get user profile and check credits - using maybeSingle to avoid errors
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('credits')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
+    if (profileError) {
       console.error('Profile error:', profileError);
+      throw new Error('Failed to fetch user profile');
+    }
+
+    if (!profile) {
+      console.error('No profile found for user:', userId);
       throw new Error('User profile not found. Please ensure your account is properly set up.');
     }
 
