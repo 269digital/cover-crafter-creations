@@ -1,0 +1,2 @@
+-- Add better error handling and logging to the generate-covers function
+-- Let's update the function to handle Ideogram API errors more gracefully

@@ -69,36 +69,55 @@ serve(async (req) => {
 
     // Generate 4 variations using Ideogram API
     const ideogramApiKey = Deno.env.get("IDEOGRAM_API_KEY");
+    console.log(`Using Ideogram API key: ${ideogramApiKey ? 'Key present' : 'Key missing'}`);
+    
+    if (!ideogramApiKey) {
+      throw new Error("IDEOGRAM_API_KEY environment variable is not set");
+    }
+    
     const imageUrls: string[] = [];
 
     for (let i = 0; i < 4; i++) {
       try {
+        console.log(`Generating variation ${i + 1} with prompt: ${prompt.substring(0, 100)}...`);
+        
+        const requestBody = {
+          image_request: {
+            prompt: prompt,
+            aspect_ratio: "ASPECT_3_4", // Book cover aspect ratio
+            model: "V_2",
+            magic_prompt_option: "ON", // Enable Magic Prompt
+            speed: "STANDARD", // Use standard speed
+          },
+        };
+        
+        console.log(`Request body for variation ${i + 1}:`, JSON.stringify(requestBody, null, 2));
+        
         const response = await fetch("https://api.ideogram.ai/generate", {
           method: "POST",
           headers: {
-            "Api-Key": ideogramApiKey!,
+            "Api-Key": ideogramApiKey,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            image_request: {
-              prompt: prompt,
-              aspect_ratio: "ASPECT_3_4", // Book cover aspect ratio
-              model: "V_2",
-              magic_prompt_option: "ON", // Enable Magic Prompt
-              speed: "STANDARD", // Use standard speed
-            },
-          }),
+          body: JSON.stringify(requestBody),
         });
 
+        console.log(`Response status for variation ${i + 1}: ${response.status}`);
+        
         if (!response.ok) {
-          console.error(`Ideogram API error for variation ${i + 1}:`, await response.text());
+          const errorText = await response.text();
+          console.error(`Ideogram API error for variation ${i + 1}:`, errorText);
           continue;
         }
 
         const result = await response.json();
+        console.log(`API response for variation ${i + 1}:`, JSON.stringify(result, null, 2));
+        
         if (result.data && result.data.length > 0) {
           imageUrls.push(result.data[0].url);
           console.log(`Generated variation ${i + 1}: ${result.data[0].url}`);
+        } else {
+          console.error(`No data returned for variation ${i + 1}:`, result);
         }
       } catch (error) {
         console.error(`Error generating variation ${i + 1}:`, error);
