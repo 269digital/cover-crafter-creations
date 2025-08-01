@@ -73,62 +73,91 @@ serve(async (req) => {
 
     console.log(`Generating cover for user ${user.id} with prompt: ${prompt}`);
 
-    // Generate 4 variations using OpenAI DALL-E API (more reliable than Ideogram)
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    console.log(`Using OpenAI API key: ${openaiApiKey ? `Key present (${openaiApiKey.length} chars)` : 'Key missing'}`);
+    // Generate 4 variations using Ideogram API
+    const ideogramApiKey = Deno.env.get("IDEOGRAM_API_KEY");
+    console.log(`=== IDEOGRAM DEBUG START ===`);
+    console.log(`API Key present: ${ideogramApiKey ? 'YES' : 'NO'}`);
+    console.log(`API Key length: ${ideogramApiKey ? ideogramApiKey.length : 0}`);
+    console.log(`API Key first 10 chars: ${ideogramApiKey ? ideogramApiKey.substring(0, 10) + '...' : 'N/A'}`);
     
-    if (!openaiApiKey) {
-      throw new Error("OPENAI_API_KEY environment variable is not set. Please add your OpenAI API key to use image generation.");
+    if (!ideogramApiKey) {
+      console.error("CRITICAL: IDEOGRAM_API_KEY environment variable is not set");
+      throw new Error("IDEOGRAM_API_KEY environment variable is not set");
     }
     
     const imageUrls: string[] = [];
 
-    for (let i = 0; i < 4; i++) {
+    // Test with just one generation first
+    for (let i = 0; i < 1; i++) {
       try {
-        console.log(`Generating variation ${i + 1} with prompt: ${prompt.substring(0, 100)}...`);
+        console.log(`\n=== GENERATING VARIATION ${i + 1} ===`);
+        console.log(`Prompt: ${prompt}`);
         
-        const response = await fetch("https://api.openai.com/v1/images/generations", {
+        const requestBody = {
+          image_request: {
+            prompt: prompt,
+            aspect_ratio: "ASPECT_3_4",
+            model: "V_2",
+            magic_prompt_option: "ON",
+            speed: "STANDARD",
+          },
+        };
+        
+        console.log(`Request body:`, JSON.stringify(requestBody, null, 2));
+        console.log(`Making request to: https://api.ideogram.ai/generate`);
+        console.log(`Headers: Api-Key: ${ideogramApiKey.substring(0, 10)}..., Content-Type: application/json`);
+        
+        const startTime = Date.now();
+        
+        const response = await fetch("https://api.ideogram.ai/generate", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${openaiApiKey}`,
+            "Api-Key": ideogramApiKey,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: prompt,
-            n: 1,
-            size: "1024x1792", // Portrait orientation for book covers
-            quality: "standard",
-            style: "vivid"
-          }),
+          body: JSON.stringify(requestBody),
         });
 
-        console.log(`OpenAI API response status for variation ${i + 1}: ${response.status}`);
+        const endTime = Date.now();
+        console.log(`Request completed in ${endTime - startTime}ms`);
+        console.log(`Response status: ${response.status}`);
+        console.log(`Response status text: ${response.statusText}`);
+        console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+        
+        const responseText = await response.text();
+        console.log(`Response body length: ${responseText.length}`);
+        console.log(`Response body (first 1000 chars): ${responseText.substring(0, 1000)}`);
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`OpenAI API error for variation ${i + 1} (${response.status}): ${errorText}`);
-          // If we get a critical error on the first attempt, throw it
-          if (i === 0 && response.status === 401) {
-            throw new Error(`OpenAI API authentication failed: ${errorText}`);
-          }
-          continue;
+          console.error(`ERROR: Ideogram API returned ${response.status}: ${response.statusText}`);
+          console.error(`Full error response: ${responseText}`);
+          throw new Error(`Ideogram API error (${response.status}): ${responseText}`);
         }
 
-        const result = await response.json();
-        console.log(`Generated image for variation ${i + 1}:`, result.data[0].url);
+        let result;
+        try {
+          result = JSON.parse(responseText);
+          console.log(`Parsed JSON successfully:`, JSON.stringify(result, null, 2));
+        } catch (parseError) {
+          console.error(`JSON Parse Error: ${parseError}`);
+          console.error(`Raw response: ${responseText}`);
+          throw new Error(`Invalid JSON response from Ideogram API: ${parseError}`);
+        }
         
         if (result.data && result.data.length > 0) {
           imageUrls.push(result.data[0].url);
+          console.log(`SUCCESS: Generated image URL: ${result.data[0].url}`);
         } else {
-          console.error(`No data returned for variation ${i + 1}:`, result);
+          console.error(`No image data in response:`, result);
+          throw new Error("No image data returned from Ideogram API");
         }
+        
       } catch (error) {
-        console.error(`Error generating variation ${i + 1}:`, error);
-        // If it's the first variation and we get a critical error, re-throw it
-        if (i === 0 && (error.message.includes('authentication') || error.message.includes('API key'))) {
-          throw error;
-        }
+        console.error(`CRITICAL ERROR in variation ${i + 1}:`, error);
+        console.error(`Error type: ${error.constructor.name}`);
+        console.error(`Error message: ${error.message}`);
+        console.error(`Error stack: ${error.stack}`);
+        throw error; // Re-throw to fail the entire function
       }
     }
 
