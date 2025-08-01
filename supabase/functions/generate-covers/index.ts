@@ -27,12 +27,24 @@ serve(async (req) => {
     );
 
     // Get authenticated user
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data, error: authError } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
+    const authHeader = req.headers.get("Authorization");
+    console.log(`=== AUTH DEBUG ===`);
+    console.log(`Auth header present: ${authHeader ? 'YES' : 'NO'}`);
     
-    console.log(`Auth result - User: ${user?.id || 'null'}, Error: ${authError?.message || 'none'}`);
+    if (!authHeader) {
+      throw new Error("No authorization header provided");
+    }
+    
+    const token = authHeader.replace("Bearer ", "");
+    console.log(`Token length: ${token.length}`);
+    
+    const { data, error: authError } = await supabaseClient.auth.getUser(token);
+    console.log(`Auth error: ${authError ? authError.message : 'none'}`);
+    console.log(`User data:`, data);
+    
+    const user = data.user;
+    console.log(`User ID: ${user?.id || 'null'}`);
+    console.log(`User email: ${user?.email || 'null'}`);
     
     if (!user) {
       throw new Error("User not authenticated");
@@ -42,14 +54,17 @@ serve(async (req) => {
     const { title, author, genre, style, description } = await req.json();
     console.log(`Request from user ${user.id} for: ${title} by ${author}`);
 
+    console.log(`=== PROFILE QUERY DEBUG ===`);
     // Check user credits first using maybeSingle to avoid the single() error
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
-      .select("credits")
+      .select("credits, user_id, email")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    console.log(`Profile query result - Data: ${profile ? JSON.stringify(profile) : 'null'}, Error: ${profileError?.message || 'none'}`);
+    console.log(`Profile query - User ID used: ${user.id}`);
+    console.log(`Profile data: ${profile ? JSON.stringify(profile) : 'null'}`);
+    console.log(`Profile error: ${profileError ? JSON.stringify(profileError) : 'none'}`);
 
     if (profileError) {
       console.error("Error fetching profile:", profileError);
@@ -58,6 +73,12 @@ serve(async (req) => {
 
     if (!profile) {
       console.error(`No profile found for user ${user.id}`);
+      // Let's check what profiles exist
+      const { data: allProfiles } = await supabaseClient
+        .from("profiles")
+        .select("user_id, email, credits")
+        .limit(5);
+      console.log(`Sample profiles in database:`, allProfiles);
       throw new Error("User profile not found. Please ensure your account is properly set up.");
     }
 
