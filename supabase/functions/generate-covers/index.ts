@@ -79,26 +79,13 @@ serve(async (req) => {
       throw new Error('Insufficient credits. Please purchase more credits to generate covers.');
     }
 
-    // Deduct credit first
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ credits: profile.credits - 1 })
-      .eq('user_id', userId);
-
-    if (updateError) {
-      console.error('Error updating credits:', updateError);
-      throw new Error('Failed to process credit deduction');
-    }
-
-    console.log(`Credit deducted. User now has ${profile.credits - 1} credits`);
-
     // Get Ideogram API key
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY');
     if (!ideogramApiKey) {
       throw new Error('Ideogram API key not configured. Please add IDEOGRAM_API_KEY to your Supabase secrets.');
     }
 
-    // Generate AI images using Ideogram
+    // Generate AI images using Ideogram FIRST, then deduct credit
     console.log('Generating covers with Ideogram...');
     
     // Create detailed prompt for book cover
@@ -138,6 +125,19 @@ serve(async (req) => {
         const generatedImages = result.data.map((item: any) => item.url);
         console.log('Generated images:', generatedImages);
 
+        // Only deduct credit AFTER successful generation
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ credits: profile.credits - 1 })
+          .eq('user_id', userId);
+
+        if (updateError) {
+          console.error('Error updating credits:', updateError);
+          // Still return images even if credit update fails
+        }
+
+        console.log(`Credit deducted. User now has ${profile.credits - 1} credits`);
+
         return new Response(JSON.stringify({
           success: true,
           message: `Generated ${generatedImages.length} covers for "${title}"`,
@@ -154,18 +154,6 @@ serve(async (req) => {
       console.error('Error generating with Ideogram:', error);
       throw new Error(`Failed to generate covers: ${error.message}`);
     }
-
-    console.log('Generated images:', generatedImages);
-
-    return new Response(JSON.stringify({
-      success: true,
-      message: `Generated ${generatedImages.length} covers for "${title}"`,
-      images: generatedImages,
-      creditsRemaining: profile.credits - 1
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
 
   } catch (error) {
     console.error("Cover generation error:", error);
