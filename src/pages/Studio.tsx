@@ -8,15 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Palette, Sparkles, CreditCard, Download, Heart, Zap } from "lucide-react";
+import { Palette, Sparkles, CreditCard, Download, Heart, Zap, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
 
 const Studio = () => {
   const { user, credits, signOut, refreshCredits } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [genre, setGenre] = useState("");
   const [style, setStyle] = useState("");
   const [bookTitle, setBookTitle] = useState("");
@@ -255,6 +257,17 @@ const Studio = () => {
             >
               Buy Credits
             </Button> */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate("/my-covers")}
