@@ -408,33 +408,36 @@ const Studio = () => {
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg">
-                          <div className="flex flex-col items-center justify-center h-full gap-2">
+                          <div className="flex flex-col items-center justify-center h-full gap-3 p-4">
                             {!image.isUpscaled ? (
                               <Button
-                                size="sm"
+                                size="lg"
                                 variant="secondary"
                                 onClick={() => handleUpscale(index)}
                                 disabled={image.isUpscaling}
-                                className="w-20"
+                                className="w-full min-w-[120px] bg-white/90 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold"
                               >
                                 {image.isUpscaling ? (
-                                  "..."
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-900 border-t-transparent mr-2"></div>
+                                    Upscaling...
+                                  </>
                                 ) : (
                                   <>
-                                    <Zap className="h-4 w-4 mr-1" />
-                                    Upscale
+                                    <Zap className="h-4 w-4 mr-2" />
+                                    Upscale (1 Credit)
                                   </>
                                 )}
                               </Button>
                             ) : (
                               <Button
-                                size="sm"
-                                variant="secondary"
+                                size="lg"
+                                variant="hero"
                                 onClick={() => handleDownload(image.url, index)}
-                                className="w-20"
+                                className="w-full min-w-[120px] font-semibold"
                               >
-                                <Download className="h-4 w-4 mr-1" />
-                                Download
+                                <Download className="h-4 w-4 mr-2" />
+                                Download HD
                               </Button>
                             )}
                           </div>
