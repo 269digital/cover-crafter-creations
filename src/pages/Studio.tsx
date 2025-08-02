@@ -237,6 +237,10 @@ const Studio = () => {
               <h1 className="text-xl font-bold">Covers by AI</h1>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+                <CreditCard className="h-4 w-4 mr-1" />
+                {credits} Credits
+              </Badge>
               <Button
                 variant="ghost"
                 size="sm"
