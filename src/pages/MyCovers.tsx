@@ -81,40 +81,35 @@ const MyCovers = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Image className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">My Covers</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Badge variant="secondary" className="px-3 py-1">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-0">
+            <div className="flex items-center space-x-2">
+              <Image className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">My Covers</h1>
+            </div>
+            <Badge variant="secondary" className="px-3 py-1 flex items-center">
               <CreditCard className="h-4 w-4 mr-1" />
-              Credits: {credits}
+              <span className="font-medium">{credits} Credits</span>
             </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Button 
               variant="outline" 
+              size="sm"
               onClick={() => navigate("/studio")}
+              className="flex-1 sm:flex-none"
             >
               Create New
             </Button>
             <Button 
               variant="outline" 
+              size="sm"
               onClick={() => navigate("/buy-credits")}
+              className="flex-1 sm:flex-none"
             >
               Buy Credits
             </Button>
-            <Button variant="ghost" onClick={handleSignOut}>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
               Sign Out
             </Button>
           </div>
