@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { CreditCard, Download, Image, Eye, X } from "lucide-react";
+import { CreditCard, Download, Image, Eye, X, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Creation {
   id: string;
@@ -19,11 +20,13 @@ interface Creation {
 }
 
 const MyCovers = () => {
-  const { user, credits, signOut } = useAuth();
+  const { user, credits, signOut, refreshCredits } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [creations, setCreations] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [upscalingImages, setUpscalingImages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -65,6 +68,65 @@ const MyCovers = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleUpscale = async (imageUrl: string, creationId: string, imageIndex: number) => {
+    // Skip credit check for free testing mode
+    const imageKey = `${creationId}-${imageIndex}`;
+    
+    if (upscalingImages.has(imageKey)) return; // Already upscaling
+    
+    setUpscalingImages(prev => new Set(prev).add(imageKey));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('upscale-cover', {
+        body: { 
+          imageUrl: imageUrl,
+          prompt: `High quality upscaled book cover, sharp details, professional appearance`
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.success) {
+        // Update the creation in the database with the upscaled image
+        const updateData: any = {};
+        updateData[`image_url${imageIndex + 1}`] = data.upscaledImage;
+        
+        const { error: updateError } = await supabase
+          .from('creations')
+          .update(updateData)
+          .eq('id', creationId);
+
+        if (updateError) {
+          console.error('Error updating creation:', updateError);
+        } else {
+          // Refresh the creations to show the updated image
+          await fetchCreations();
+        }
+
+        await refreshCredits();
+        toast({
+          title: "Upscale Successful!",
+          description: `Cover has been upscaled to higher resolution.`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Upscale error:', error);
+      toast({
+        title: "Upscale Failed",
+        description: error.message || "Failed to upscale image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpscalingImages(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(imageKey);
+        return newSet;
+      });
+    }
   };
 
   const getAllImages = (creation: Creation): string[] => {
@@ -157,22 +219,40 @@ const MyCovers = () => {
                       alt={`Cover ${index + 1}`}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setSelectedImage(imageUrl)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => handleDownload(imageUrl)}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
+                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                       <Button
+                         size="sm"
+                         variant="secondary"
+                         onClick={() => setSelectedImage(imageUrl)}
+                       >
+                         <Eye className="h-4 w-4" />
+                       </Button>
+                       {(() => {
+                         const imageKey = `${creation.id}-${index}`;
+                         const isUpscaling = upscalingImages.has(imageKey);
+                         return (
+                           <Button
+                             size="sm"
+                             variant="secondary"
+                             onClick={() => handleUpscale(imageUrl, creation.id, index)}
+                             disabled={isUpscaling}
+                             className="min-w-[80px]"
+                           >
+                             {isUpscaling ? (
+                               <>
+                                 <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent mr-1"></div>
+                                 Upscaling...
+                               </>
+                             ) : (
+                               <>
+                                 <Zap className="h-4 w-4 mr-1" />
+                                 Upscale (2 Credits)
+                               </>
+                             )}
+                           </Button>
+                         );
+                       })()}
+                     </div>
                   </div>
                   <CardContent className="p-4">
                     <p className="text-sm text-muted-foreground line-clamp-2">
