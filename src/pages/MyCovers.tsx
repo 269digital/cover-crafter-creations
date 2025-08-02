@@ -78,17 +78,17 @@ const MyCovers = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
-      <header className="border-b bg-card shadow-sm">
+      <header className="bg-white/5 backdrop-blur-md border-white/10 border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
-              <Image className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-bold">My Covers</h1>
+              <Image className="h-6 w-6 text-white" />
+              <h1 className="text-xl font-bold text-white">My Covers</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium bg-white/10 text-white border-white/20">
                 <CreditCard className="h-4 w-4 mr-1" />
                 {credits} Credits
               </Badge>
@@ -99,6 +99,7 @@ const MyCovers = () => {
                   const newTheme = theme === "dark" ? "light" : "dark";
                   setTheme(newTheme);
                 }}
+                className="text-white hover:bg-white/10"
               >
                 {theme === "dark" ? (
                   <Sun className="h-4 w-4" />
@@ -113,7 +114,7 @@ const MyCovers = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/studio")}
-              className="hidden sm:inline-flex"
+              className="hidden sm:inline-flex bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Create New
             </Button>
@@ -121,7 +122,7 @@ const MyCovers = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/studio")}
-              className="sm:hidden"
+              className="sm:hidden bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Create
             </Button>
@@ -129,7 +130,7 @@ const MyCovers = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/buy-credits")}
-              className="hidden sm:inline-flex"
+              className="hidden sm:inline-flex bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Buy Credits
             </Button>
@@ -137,11 +138,11 @@ const MyCovers = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/buy-credits")}
-              className="sm:hidden"
+              className="sm:hidden bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Credits
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/10">
               Sign Out
             </Button>
           </div>
@@ -150,8 +151,8 @@ const MyCovers = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-2">Your HD Book Covers</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl font-bold mb-2 text-white">Your HD Book Covers</h2>
+          <p className="text-white/85">
             Your permanently saved upscaled book covers - download anytime in high quality
           </p>
         </div>

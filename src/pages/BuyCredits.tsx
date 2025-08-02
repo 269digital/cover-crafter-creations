@@ -69,17 +69,17 @@ const BuyCredits = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
-      <header className="border-b bg-card shadow-sm">
+      <header className="bg-white/5 backdrop-blur-md border-white/10 border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
-              <CreditCard className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-bold">Buy Credits</h1>
+              <CreditCard className="h-6 w-6 text-white" />
+              <h1 className="text-xl font-bold text-white">Buy Credits</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium bg-white/10 text-white border-white/20">
                 <CreditCard className="h-4 w-4 mr-1" />
                 {credits} Credits
               </Badge>
@@ -90,6 +90,7 @@ const BuyCredits = () => {
                   const newTheme = theme === "dark" ? "light" : "dark";
                   setTheme(newTheme);
                 }}
+                className="text-white hover:bg-white/10"
               >
                 {theme === "dark" ? (
                   <Sun className="h-4 w-4" />
@@ -104,7 +105,7 @@ const BuyCredits = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/studio")}
-              className="hidden sm:inline-flex"
+              className="hidden sm:inline-flex bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Studio
             </Button>
@@ -112,7 +113,7 @@ const BuyCredits = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/studio")}
-              className="sm:hidden"
+              className="sm:hidden bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Studio
             </Button>
@@ -120,7 +121,7 @@ const BuyCredits = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/my-covers")}
-              className="hidden sm:inline-flex"
+              className="hidden sm:inline-flex bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               My Covers
             </Button>
@@ -128,7 +129,7 @@ const BuyCredits = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/my-covers")}
-              className="sm:hidden"
+              className="sm:hidden bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Covers
             </Button>
@@ -136,10 +137,11 @@ const BuyCredits = () => {
               variant="ghost" 
               size="sm"
               onClick={() => navigate("/verify-payment")}
+              className="text-white hover:bg-white/10"
             >
               Verify
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/10">
               Sign Out
             </Button>
           </div>
@@ -148,8 +150,8 @@ const BuyCredits = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold mb-4 text-white">Simple, Transparent Pricing</h2>
+          <p className="text-white/85 max-w-2xl mx-auto">
             Unlock the power of AI-generated book covers. Each credit generates 4 unique cover variations for you to choose from.
           </p>
         </div>
@@ -202,16 +204,16 @@ const BuyCredits = () => {
         </div>
 
         <div className="mt-8 text-center mb-8">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-white/60">
             *A "complete project" includes generating multiple concepts and one final high-resolution upscale.
           </p>
         </div>
 
         <div className="mt-12 text-center">
-          <Card className="max-w-2xl mx-auto">
+          <Card className="max-w-2xl mx-auto bg-white/5 backdrop-blur-md border-white/10 text-white">
             <CardContent className="pt-6">
               <h3 className="font-semibold mb-2">Need More Credits?</h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/75">
                 Contact our team for custom enterprise packages and volume discounts.
               </p>
             </CardContent>

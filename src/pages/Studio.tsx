@@ -227,17 +227,17 @@ const Studio = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
-      <header className="border-b bg-card shadow-sm">
+      <header className="bg-white/5 backdrop-blur-md border-white/10 border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
-              <Palette className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-bold">Covers by AI</h1>
+              <Palette className="h-6 w-6 text-white" />
+              <h1 className="text-xl font-bold text-white">Covers by AI</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium bg-white/10 text-white border-white/20">
                 <CreditCard className="h-4 w-4 mr-1" />
                 {credits} Credits
               </Badge>
@@ -250,6 +250,7 @@ const Studio = () => {
                   console.log("Switching to theme:", newTheme);
                   setTheme(newTheme);
                 }}
+                className="text-white hover:bg-white/10"
               >
                 {theme === "dark" ? (
                   <Sun className="h-4 w-4" />
@@ -264,7 +265,7 @@ const Studio = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/my-covers")}
-              className="hidden sm:inline-flex"
+              className="hidden sm:inline-flex bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               My Covers
             </Button>
@@ -272,11 +273,11 @@ const Studio = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/my-covers")}
-              className="sm:hidden"
+              className="sm:hidden bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Covers
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/10">
               Sign Out
             </Button>
           </div>
