@@ -381,7 +381,7 @@ const Studio = () => {
                 disabled={generating}
               >
                 {generating ? (
-                  "Generating..."
+                  "Generating... (May take up to 30 seconds)"
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 mr-2" />
