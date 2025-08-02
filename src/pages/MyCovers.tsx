@@ -137,7 +137,10 @@ const MyCovers = () => {
               <p className="text-muted-foreground mb-4">
                 Start creating amazing book covers with AI
               </p>
-              <Button onClick={() => navigate("/studio")}>
+              <Button onClick={() => {
+                console.log("Create Your First Cover button clicked, navigating to /studio");
+                navigate("/studio");
+              }}>
                 Create Your First Cover
               </Button>
             </CardContent>
