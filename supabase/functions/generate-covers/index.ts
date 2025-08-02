@@ -131,6 +131,7 @@ serve(async (req) => {
       const responses = await Promise.all(coverPromises);
       
       const generatedImages = [];
+      const generationIds = [];
       for (let i = 0; i < responses.length; i++) {
         const response = responses[i];
         if (!response.ok) {
@@ -144,6 +145,7 @@ serve(async (req) => {
         
         if (result.data && result.data.length > 0) {
           generatedImages.push(result.data[0].url);
+          generationIds.push(result.data[0].generation_id);
         }
       }
 
@@ -160,6 +162,7 @@ serve(async (req) => {
         success: true,
         message: `Generated ${generatedImages.length} covers for "${title}" (Testing Mode)`,
         images: generatedImages,
+        generationIds: generationIds,
         creditsRemaining: 999
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

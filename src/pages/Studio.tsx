@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Palette, Sparkles, CreditCard, Download, Heart } from "lucide-react";
+import { Palette, Sparkles, CreditCard, Download, Heart, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,12 @@ const Studio = () => {
   const [description, setDescription] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [imageData, setImageData] = useState<Array<{
+    url: string;
+    generationId?: string;
+    isUpscaled: boolean;
+    isUpscaling: boolean;
+  }>>([]);
 
   const genres = [
     "Thriller",
@@ -67,6 +73,7 @@ const Studio = () => {
 
     setGenerating(true);
     setGeneratedImages([]);
+    setImageData([]);
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-covers', {
@@ -85,6 +92,14 @@ const Studio = () => {
 
       if (data?.success) {
         setGeneratedImages(data.images || []);
+        // Initialize image data with generation IDs if available
+        const newImageData = (data.images || []).map((url: string, index: number) => ({
+          url,
+          generationId: data.generationIds?.[index],
+          isUpscaled: false,
+          isUpscaling: false,
+        }));
+        setImageData(newImageData);
         await refreshCredits(); // Refresh credits to show updated count
         toast({
           title: "Success!",
@@ -130,6 +145,76 @@ const Studio = () => {
       toast({
         title: "Download Alternative",
         description: "Right-click the image in the new tab and select 'Save image as...'",
+      });
+    }
+  };
+
+  const handleUpscale = async (index: number) => {
+    if (credits < 1) {
+      toast({
+        title: "Insufficient Credits",
+        description: "You need at least 1 credit to upscale an image. Please purchase more credits.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const imageInfo = imageData[index];
+    if (!imageInfo?.generationId) {
+      toast({
+        title: "Upscale Failed",
+        description: "Unable to upscale this image. Generation ID not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set upscaling state
+    setImageData(prev => prev.map((img, idx) => 
+      idx === index ? { ...img, isUpscaling: true } : img
+    ));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('upscale-cover', {
+        body: { generationId: imageInfo.generationId }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.success) {
+        // Update the image data with upscaled image
+        setImageData(prev => prev.map((img, idx) => 
+          idx === index ? { 
+            ...img, 
+            url: data.upscaledImage,
+            generationId: data.generationId,
+            isUpscaled: true,
+            isUpscaling: false 
+          } : img
+        ));
+        
+        // Also update the generatedImages array for backward compatibility
+        setGeneratedImages(prev => prev.map((url, idx) => 
+          idx === index ? data.upscaledImage : url
+        ));
+
+        await refreshCredits();
+        toast({
+          title: "Upscale Successful!",
+          description: `Cover ${index + 1} has been upscaled to higher resolution.`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Upscale error:', error);
+      setImageData(prev => prev.map((img, idx) => 
+        idx === index ? { ...img, isUpscaling: false } : img
+      ));
+      toast({
+        title: "Upscale Failed",
+        description: error.message || "Failed to upscale image. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -299,26 +384,53 @@ const Studio = () => {
               </Button>
 
               {/* Results Section */}
-              {generatedImages.length > 0 && (
+              {imageData.length > 0 && (
                 <div className="pt-6 border-t">
                   <h3 className="font-semibold mb-4">Generated Covers</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {generatedImages.map((imageUrl, index) => (
+                    {imageData.map((image, index) => (
                       <div key={index} className="relative group">
                         <img 
-                          src={imageUrl} 
+                          src={image.url} 
                           alt={`Generated cover ${index + 1}`}
                           className="aspect-[2/3] w-full object-cover rounded-lg shadow-sm"
                         />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleDownload(imageUrl, index)}
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </Button>
+                        {image.isUpscaled && (
+                          <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                            Upscaled
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg">
+                          <div className="flex flex-col items-center justify-center h-full gap-2">
+                            {!image.isUpscaled ? (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleUpscale(index)}
+                                disabled={image.isUpscaling}
+                                className="w-20"
+                              >
+                                {image.isUpscaling ? (
+                                  "..."
+                                ) : (
+                                  <>
+                                    <Zap className="h-4 w-4 mr-1" />
+                                    Upscale
+                                  </>
+                                )}
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleDownload(image.url, index)}
+                                className="w-20"
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Download
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -327,7 +439,7 @@ const Studio = () => {
               )}
 
               {/* Placeholder when no images */}
-              {!generating && generatedImages.length === 0 && (
+              {!generating && imageData.length === 0 && (
                 <div className="pt-6 border-t">
                   <h3 className="font-semibold mb-4">Generated Covers</h3>
                   <div className="grid grid-cols-2 gap-4">
