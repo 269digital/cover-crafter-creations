@@ -76,6 +76,18 @@ serve(async (req) => {
       )
     }
 
+    // Check if generation ID is valid (not a fallback ID)
+    if (generationId.startsWith('gen_')) {
+      console.log('Invalid generation ID detected:', generationId)
+      return new Response(
+        JSON.stringify({ 
+          error: 'This image cannot be upscaled. Generation ID not available from the original generation.',
+          details: 'The image was generated without a proper generation ID for upscaling.'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Call Ideogram upscale API
     console.log('Upscaling generation:', generationId)
     const upscaleResponse = await fetch('https://api.ideogram.ai/v2/upscale', {
@@ -94,7 +106,7 @@ serve(async (req) => {
       console.error('Ideogram upscale API error:', upscaleResponse.status, errorText)
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to upscale image. Please try again.',
+          error: 'Failed to upscale image. The generation ID may be invalid or expired.',
           details: errorText
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

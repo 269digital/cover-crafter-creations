@@ -142,10 +142,14 @@ serve(async (req) => {
 
         const result = await response.json();
         console.log(`Ideogram generation result for cover ${i + 1}:`, result);
+        console.log(`Full response structure:`, JSON.stringify(result, null, 2));
         
         if (result.data && result.data.length > 0) {
           generatedImages.push(result.data[0].url);
-          generationIds.push(result.data[0].generation_id);
+          // The generation ID should be at the top level of the response
+          const genId = result.id || result.generation_id || result.data[0].id;
+          console.log(`Extracted generation ID for cover ${i + 1}:`, genId);
+          generationIds.push(genId || `gen_${Date.now()}_${i}`);
         }
       }
 
