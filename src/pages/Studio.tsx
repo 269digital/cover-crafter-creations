@@ -260,7 +260,12 @@ const Studio = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => {
+                console.log("Dark mode toggle clicked, current theme:", theme);
+                const newTheme = theme === "dark" ? "light" : "dark";
+                console.log("Switching to theme:", newTheme);
+                setTheme(newTheme);
+              }}
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
