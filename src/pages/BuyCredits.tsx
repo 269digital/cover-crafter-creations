@@ -72,46 +72,43 @@ const BuyCredits = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <CreditCard className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Buy Credits</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Badge variant="secondary" className="px-3 py-1">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-0">
+            <div className="flex items-center space-x-2">
+              <CreditCard className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">Buy Credits</h1>
+            </div>
+            <Badge variant="secondary" className="px-3 py-1 flex items-center">
               <CreditCard className="h-4 w-4 mr-1" />
-              Credits: {credits}
+              <span className="font-medium">{credits} Credits</span>
             </Badge>
-            <Button
-              variant="ghost"
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Button 
+              variant="outline" 
               size="sm"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </Button>
-            <Button 
-              variant="outline" 
               onClick={() => navigate("/studio")}
+              className="flex-1 sm:flex-none min-w-0"
             >
-              Back to Studio
+              Studio
             </Button>
             <Button 
               variant="outline" 
+              size="sm"
               onClick={() => navigate("/my-covers")}
+              className="flex-1 sm:flex-none min-w-0"
             >
               My Covers
             </Button>
             <Button 
               variant="ghost" 
+              size="sm"
               onClick={() => navigate("/verify-payment")}
+              className="flex-1 sm:flex-none min-w-0"
             >
-              Verify Payment
+              Verify
             </Button>
-            <Button variant="ghost" onClick={handleSignOut}>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
               Sign Out
             </Button>
           </div>
@@ -126,7 +123,7 @@ const BuyCredits = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {creditPackages.map((pkg, index) => (
             <Card 
               key={pkg.name} 
