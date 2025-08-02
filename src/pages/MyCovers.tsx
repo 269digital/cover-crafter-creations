@@ -201,32 +201,41 @@ const MyCovers = () => {
 
       {/* Image Preview Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle>Book Cover Preview</DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedImage(null)}
-                className="h-6 w-6 p-0 hover:bg-gray-100"
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Button>
-            </div>
-          </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          {/* Close button overlay - always visible */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              console.log('Close button clicked');
+              e.stopPropagation();
+              setSelectedImage(null);
+            }}
+            className="absolute top-4 right-4 z-50 h-8 w-8 p-0 bg-black/50 hover:bg-black/70 text-white rounded-full"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+          
           {selectedImage && (
-            <div className="space-y-4 overflow-auto max-h-[calc(90vh-120px)]">
-              <div className="flex justify-center">
-                <img
-                  src={selectedImage}
-                  alt="Cover Preview"
-                  className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg cursor-pointer"
-                  onClick={() => setSelectedImage(null)}
-                  title="Click to close"
-                />
-              </div>
+            <div 
+              className="relative w-full h-full flex items-center justify-center p-4 cursor-pointer"
+              onClick={(e) => {
+                console.log('Container clicked');
+                e.stopPropagation();
+                setSelectedImage(null);
+              }}
+            >
+              <img
+                src={selectedImage}
+                alt="Cover Preview"
+                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-lg"
+                onClick={(e) => {
+                  console.log('Image clicked');
+                  e.stopPropagation();
+                  setSelectedImage(null);
+                }}
+              />
             </div>
           )}
         </DialogContent>
