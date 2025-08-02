@@ -66,37 +66,7 @@ serve(async (req) => {
       )
     }
 
-    // Get user profile and check credits
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('credits')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error('Profile error:', profileError);
-      return new Response(
-        JSON.stringify({ error: 'Unable to check user credits' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (!profile) {
-      console.error('No profile found for user:', user.id);
-      return new Response(
-        JSON.stringify({ error: 'User profile not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log(`User has ${profile.credits} credits`);
-
-    if (profile.credits < 2) {
-      return new Response(
-        JSON.stringify({ error: 'Insufficient credits. You need 2 credits to upscale a cover. Please purchase more credits.' }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Skip credit check for free testing mode
 
     // Get Ideogram API key
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY')
@@ -158,29 +128,12 @@ serve(async (req) => {
     const upscaleData = await upscaleResponse.json()
     console.log('Upscale response:', upscaleData)
 
-    // Deduct 2 credits from user's account
-    const { data: updateData, error: updateError } = await supabaseClient
-      .from('profiles')
-      .update({ credits: profile.credits - 2 })
-      .eq('user_id', user.id)
-      .select('credits');
-
-    if (updateError) {
-      console.error('Error updating credits:', updateError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to update credits' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const newCredits = updateData[0]?.credits || 0;
-    console.log(`Credits updated from ${profile.credits} to ${newCredits}`);
-
+    // Skip credit deduction for free testing mode
     return new Response(
       JSON.stringify({ 
         success: true,
         upscaledImage: upscaleData.data?.[0]?.url || upscaleData.url,
-        creditsRemaining: newCredits
+        creditsRemaining: 999 // Return a high number for testing
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

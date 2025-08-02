@@ -56,7 +56,8 @@ serve(async (req) => {
     const { title, author, genre, style, description } = await req.json();
     console.log(`Request from user ${userId} for: ${title} by ${author}`);
 
-    // Get user profile and check credits
+    // Credit check temporarily disabled for testing
+    // Get user profile and check credits - using maybeSingle to avoid errors
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('credits')
@@ -65,19 +66,17 @@ serve(async (req) => {
 
     if (profileError) {
       console.error('Profile error:', profileError);
-      throw new Error('Unable to check user credits');
+      // Don't throw error for testing mode
+      console.log('Profile check disabled for testing');
     }
 
     if (!profile) {
       console.error('No profile found for user:', userId);
-      throw new Error('User profile not found');
+      // Don't throw error for testing mode
+      console.log('Profile check disabled for testing');
     }
 
-    console.log(`User has ${profile.credits} credits`);
-
-    if (profile.credits < 2) {
-      throw new Error('Insufficient credits. You need 2 credits to generate covers. Please purchase more credits.');
-    }
+    console.log(`Credit check disabled - testing mode enabled`);
 
     // Get Ideogram API key
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY');
@@ -156,27 +155,15 @@ serve(async (req) => {
 
       console.log(`Generated ${generatedImages.length} images:`, generatedImages);
 
-      // Deduct 2 credits from user's account
-      const { data: updateData, error: updateError } = await supabase
-        .from('profiles')
-        .update({ credits: profile.credits - 2 })
-        .eq('user_id', userId)
-        .select('credits');
-
-      if (updateError) {
-        console.error('Error updating credits:', updateError);
-        throw new Error('Failed to update credits');
-      }
-
-      const newCredits = updateData[0]?.credits || 0;
-      console.log(`Credits updated from ${profile.credits} to ${newCredits}`);
+      // Credit deduction temporarily disabled for testing
+      console.log(`Credit deduction disabled - testing mode`);
 
       return new Response(JSON.stringify({
         success: true,
-        message: `Generated ${generatedImages.length} covers for "${title}"`,
+        message: `Generated ${generatedImages.length} covers for "${title}" (Testing Mode)`,
         images: generatedImages,
         generationIds: generationIds,
-        creditsRemaining: newCredits
+        creditsRemaining: 999
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
