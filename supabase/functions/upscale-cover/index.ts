@@ -55,13 +55,13 @@ serve(async (req) => {
     const user = userData.user
     console.log('Authenticated user:', user.id)
 
-    const { generationId } = await req.json()
-    console.log('Received upscale request with generationId:', generationId)
+    const { imageUrl, prompt } = await req.json()
+    console.log('Received upscale request with imageUrl:', imageUrl)
 
-    if (!generationId) {
-      console.error('No generation ID provided')
+    if (!imageUrl) {
+      console.error('No image URL provided')
       return new Response(
-        JSON.stringify({ error: 'Generation ID is required' }),
+        JSON.stringify({ error: 'Image URL is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -98,23 +98,39 @@ serve(async (req) => {
       )
     }
 
-    // For now, let's try to upscale even with fallback generation IDs to see what happens
-    console.log('Attempting to upscale with generationId:', generationId)
-    if (generationId.startsWith('gen_')) {
-      console.log('Warning: Using fallback generation ID. Upscale may fail.')
+    // Download the image from the provided URL
+    console.log('Downloading image from URL:', imageUrl)
+    const imageResponse = await fetch(imageUrl)
+    if (!imageResponse.ok) {
+      console.error('Failed to download image:', imageResponse.status)
+      return new Response(
+        JSON.stringify({ error: 'Failed to download the image for upscaling' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // Call Ideogram upscale API
-    console.log('Upscaling generation:', generationId)
-    const upscaleResponse = await fetch('https://api.ideogram.ai/v2/upscale', {
+    const imageBuffer = await imageResponse.arrayBuffer()
+    const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
+
+    // Create FormData for the upscale API
+    const formData = new FormData()
+    formData.append('image_file', imageBlob, 'cover.png')
+    
+    const imageRequest = {
+      prompt: prompt || 'High quality book cover, sharp details, professional appearance',
+      resolution: 'RESOLUTION_1024_1024',
+      aspect_ratio: 'ASPECT_2_3'
+    }
+    formData.append('image_request', JSON.stringify(imageRequest))
+
+    // Call Ideogram upscale API with the correct format
+    console.log('Calling Ideogram upscale API with image file')
+    const upscaleResponse = await fetch('https://api.ideogram.ai/upscale', {
       method: 'POST',
       headers: {
         'Api-Key': ideogramApiKey,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        generation_id: generationId,
-      }),
+      body: formData,
     })
 
     if (!upscaleResponse.ok) {
@@ -148,7 +164,6 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         upscaledImage: upscaleData.data?.[0]?.url || upscaleData.url,
-        generationId: upscaleData.data?.[0]?.generation_id || generationId,
         creditsRemaining: profile.credits - 1
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

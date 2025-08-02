@@ -162,16 +162,16 @@ const Studio = () => {
     const imageInfo = imageData[index];
     console.log('Attempting to upscale image at index:', index, 'with imageInfo:', imageInfo);
     
-    if (!imageInfo?.generationId) {
+    if (!imageInfo?.url) {
       toast({
         title: "Upscale Failed",
-        description: "Unable to upscale this image. Generation ID not found.",
+        description: "Unable to upscale this image. Image URL not found.",
         variant: "destructive",
       });
       return;
     }
 
-    console.log('Sending upscale request with generationId:', imageInfo.generationId);
+    console.log('Sending upscale request with imageUrl:', imageInfo.url);
 
     // Set upscaling state
     setImageData(prev => prev.map((img, idx) => 
@@ -180,7 +180,10 @@ const Studio = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('upscale-cover', {
-        body: { generationId: imageInfo.generationId }
+        body: { 
+          imageUrl: imageInfo.url,
+          prompt: `High quality ${genre} book cover for "${bookTitle}", ${style} style, sharp details, professional appearance`
+        }
       });
 
       if (error) {
