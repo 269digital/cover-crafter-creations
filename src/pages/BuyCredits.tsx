@@ -73,22 +73,46 @@ const BuyCredits = () => {
       {/* Header */}
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-3 sm:mb-0">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
               <CreditCard className="h-6 w-6 text-primary" />
               <h1 className="text-xl font-bold">Buy Credits</h1>
             </div>
-            <Badge variant="secondary" className="px-3 py-1 flex items-center">
-              <CreditCard className="h-4 w-4 mr-1" />
-              <span className="font-medium">{credits} Credits</span>
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+                <CreditCard className="h-4 w-4 mr-1" />
+                {credits} Credits
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const newTheme = theme === "dark" ? "light" : "dark";
+                  setTheme(newTheme);
+                }}
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <div className="flex items-center gap-2 flex-wrap mt-4">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => navigate("/studio")}
-              className="flex-1 sm:flex-none min-w-0"
+              className="hidden sm:inline-flex"
+            >
+              Studio
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/studio")}
+              className="sm:hidden"
             >
               Studio
             </Button>
@@ -96,15 +120,22 @@ const BuyCredits = () => {
               variant="outline" 
               size="sm"
               onClick={() => navigate("/my-covers")}
-              className="flex-1 sm:flex-none min-w-0"
+              className="hidden sm:inline-flex"
             >
               My Covers
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/my-covers")}
+              className="sm:hidden"
+            >
+              Covers
             </Button>
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => navigate("/verify-payment")}
-              className="flex-1 sm:flex-none min-w-0"
             >
               Verify
             </Button>

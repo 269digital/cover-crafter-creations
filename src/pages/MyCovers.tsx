@@ -87,7 +87,7 @@ const MyCovers = () => {
               <Image className="h-6 w-6 text-primary" />
               <h1 className="text-xl font-bold">My Covers</h1>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
               <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
                 <CreditCard className="h-4 w-4 mr-1" />
                 {credits} Credits
@@ -106,42 +106,44 @@ const MyCovers = () => {
                   <Moon className="h-4 w-4" />
                 )}
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigate("/studio")}
-                className="hidden sm:inline-flex"
-              >
-                Create New
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigate("/studio")}
-                className="sm:hidden"
-              >
-                Create
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigate("/buy-credits")}
-                className="hidden sm:inline-flex"
-              >
-                Buy Credits
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigate("/buy-credits")}
-                className="sm:hidden"
-              >
-                Credits
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                Sign Out
-              </Button>
             </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap mt-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/studio")}
+              className="hidden sm:inline-flex"
+            >
+              Create New
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/studio")}
+              className="sm:hidden"
+            >
+              Create
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/buy-credits")}
+              className="hidden sm:inline-flex"
+            >
+              Buy Credits
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/buy-credits")}
+              className="sm:hidden"
+            >
+              Credits
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              Sign Out
+            </Button>
           </div>
         </div>
       </header>
