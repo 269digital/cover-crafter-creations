@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { CreditCard, Download, Image, Eye, X, Zap } from "lucide-react";
+import { CreditCard, Download, Image, Eye, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,17 +17,15 @@ interface Creation {
   image_url3: string | null;
   image_url4: string | null;
   created_at: string;
+  upscaled_images?: string; // JSON string of upscaled image indices
 }
 
 const MyCovers = () => {
-  const { user, credits, signOut, refreshCredits } = useAuth();
+  const { user, credits, signOut } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [creations, setCreations] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [upscalingImages, setUpscalingImages] = useState<Set<string>>(new Set());
-  const [upscaledImages, setUpscaledImages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -69,75 +67,6 @@ const MyCovers = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const handleUpscale = async (imageUrl: string, creationId: string, imageIndex: number) => {
-    // Skip credit check for free testing mode
-    const imageKey = `${creationId}-${imageIndex}`;
-    
-    if (upscalingImages.has(imageKey)) return; // Already upscaling
-    
-    setUpscalingImages(prev => new Set(prev).add(imageKey));
-
-    try {
-      const { data, error } = await supabase.functions.invoke('upscale-cover', {
-        body: { 
-          imageUrl: imageUrl,
-          prompt: `High quality upscaled book cover, sharp details, professional appearance`
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data?.error) {
-        // Check if it's an expired URL error
-        if (data.expired) {
-          throw new Error(data.error);
-        }
-        throw new Error(data.error);
-      }
-
-      if (data?.success) {
-        // Update the creation in the database with the upscaled image
-        const updateData: any = {};
-        updateData[`image_url${imageIndex + 1}`] = data.upscaledImage;
-        
-        const { error: updateError } = await supabase
-          .from('creations')
-          .update(updateData)
-          .eq('id', creationId);
-
-        if (updateError) {
-          console.error('Error updating creation:', updateError);
-        } else {
-          // Mark this image as upscaled
-          setUpscaledImages(prev => new Set(prev).add(imageKey));
-          // Refresh the creations to show the updated image
-          await fetchCreations();
-        }
-
-        await refreshCredits();
-        toast({
-          title: "Upscale Successful!",
-          description: `Cover has been upscaled to higher resolution.`,
-        });
-      }
-    } catch (error: any) {
-      console.error('Upscale error:', error);
-      toast({
-        title: "Upscale Failed",
-        description: error.message || "Failed to upscale image. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setUpscalingImages(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(imageKey);
-        return newSet;
-      });
-    }
   };
 
   const getAllImages = (creation: Creation): string[] => {
@@ -238,49 +167,21 @@ const MyCovers = () => {
                        >
                          <Eye className="h-4 w-4" />
                        </Button>
-                        {(() => {
-                          const imageKey = `${creation.id}-${index}`;
-                          const isUpscaling = upscalingImages.has(imageKey);
-                          const isUpscaled = upscaledImages.has(imageKey);
-                          
-                          if (isUpscaled) {
-                            // Show download button for upscaled images
-                            return (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => handleDownload(imageUrl)}
-                                className="min-w-[80px]"
-                              >
-                                <Download className="h-4 w-4 mr-1" />
-                                Download HD
-                              </Button>
-                            );
-                          } else {
-                            // Show upscale button for non-upscaled images
-                            return (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => handleUpscale(imageUrl, creation.id, index)}
-                                disabled={isUpscaling}
-                                className="min-w-[80px]"
-                              >
-                                {isUpscaling ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent mr-1"></div>
-                                    Upscaling...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Zap className="h-4 w-4 mr-1" />
-                                    Upscale (2 Credits)
-                                  </>
-                                )}
-                              </Button>
-                            );
-                          }
-                        })()}
+                       <Button
+                         size="sm"
+                         variant="secondary"
+                         onClick={() => handleDownload(imageUrl)}
+                         className="min-w-[80px]"
+                       >
+                         <Download className="h-4 w-4 mr-1" />
+                         Download
+                       </Button>
+                     </div>
+                     {/* Upscaled Badge - will be visible when implemented */}
+                     <div className="absolute top-2 right-2">
+                       <Badge variant="secondary" className="text-xs bg-green-600 text-white">
+                         HD
+                       </Badge>
                      </div>
                   </div>
                   <CardContent className="p-4">
