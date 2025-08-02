@@ -384,6 +384,15 @@ const Studio = () => {
                 </Alert>
               )} */}
 
+              {/* Important Notice */}
+              <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                <CreditCard className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Important:</strong> Download your covers immediately after generation! 
+                  Image links expire after a few hours and won't be downloadable from "My Covers" later.
+                </AlertDescription>
+              </Alert>
+
               {/* Generate Button */}
               <Button 
                 onClick={handleGenerate}
