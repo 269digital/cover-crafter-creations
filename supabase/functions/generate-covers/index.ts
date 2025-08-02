@@ -56,8 +56,7 @@ serve(async (req) => {
     const { title, author, genre, style, description } = await req.json();
     console.log(`Request from user ${userId} for: ${title} by ${author}`);
 
-    // Credit check temporarily disabled for testing
-    // Get user profile and check credits - using maybeSingle to avoid errors
+    // Get user profile and check credits
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('credits')
@@ -66,21 +65,19 @@ serve(async (req) => {
 
     if (profileError) {
       console.error('Profile error:', profileError);
-      // Don't throw error for testing mode
-      console.log('Profile check disabled for testing');
+      throw new Error('Unable to check user credits');
     }
 
     if (!profile) {
       console.error('No profile found for user:', userId);
-      // Don't throw error for testing mode
-      console.log('Profile check disabled for testing');
+      throw new Error('User profile not found');
     }
 
-    console.log(`Credit check disabled - testing mode enabled`);
+    console.log(`User has ${profile.credits} credits`);
 
-    // if (profile.credits < 1) {
-    //   throw new Error('Insufficient credits. Please purchase more credits to generate covers.');
-    // }
+    if (profile.credits < 2) {
+      throw new Error('Insufficient credits. You need 2 credits to generate covers. Please purchase more credits.');
+    }
 
     // Get Ideogram API key
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY');
@@ -159,15 +156,27 @@ serve(async (req) => {
 
       console.log(`Generated ${generatedImages.length} images:`, generatedImages);
 
-      // Credit deduction temporarily disabled for testing
-      console.log(`Credit deduction disabled - testing mode`);
+      // Deduct 2 credits from user's account
+      const { data: updateData, error: updateError } = await supabase
+        .from('profiles')
+        .update({ credits: profile.credits - 2 })
+        .eq('user_id', userId)
+        .select('credits');
+
+      if (updateError) {
+        console.error('Error updating credits:', updateError);
+        throw new Error('Failed to update credits');
+      }
+
+      const newCredits = updateData[0]?.credits || 0;
+      console.log(`Credits updated from ${profile.credits} to ${newCredits}`);
 
       return new Response(JSON.stringify({
         success: true,
-        message: `Generated ${generatedImages.length} covers for "${title}" (Testing Mode)`,
+        message: `Generated ${generatedImages.length} covers for "${title}"`,
         images: generatedImages,
         generationIds: generationIds,
-        creditsRemaining: 999
+        creditsRemaining: newCredits
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

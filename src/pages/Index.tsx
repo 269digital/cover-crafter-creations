@@ -93,9 +93,9 @@ const Index = () => {
           <h3 className="text-3xl font-bold text-white mb-8">Simple, Transparent Pricing</h3>
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
-              { name: "Starter Pack", credits: "25 Credits", price: "$10" },
-              { name: "Author Pack", credits: "75 Credits", price: "$25", popular: true },
-              { name: "Pro Pack", credits: "200 Credits", price: "$50" }
+              { name: "Starter Pack", credits: "20 Credits", price: "$10" },
+              { name: "Author Pack", credits: "60 Credits", price: "$25", popular: true },
+              { name: "Pro Pack", credits: "150 Credits", price: "$50" }
             ].map((pkg) => (
               <Card key={pkg.name} className={`bg-white/10 backdrop-blur-sm border-white/20 text-white ${pkg.popular ? 'ring-2 ring-accent' : ''}`}>
                 {pkg.popular && (
