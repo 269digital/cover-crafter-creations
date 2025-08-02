@@ -78,9 +78,9 @@ const MyCovers = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white/5 backdrop-blur-md border-white/10 border-b shadow-sm">
+      <header className="bg-gradient-hero border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
@@ -151,8 +151,8 @@ const MyCovers = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-2 text-white">Your HD Book Covers</h2>
-          <p className="text-white/85">
+          <h2 className="text-2xl font-bold mb-2">Your HD Book Covers</h2>
+          <p className="text-muted-foreground">
             Your permanently saved upscaled book covers - download anytime in high quality
           </p>
         </div>

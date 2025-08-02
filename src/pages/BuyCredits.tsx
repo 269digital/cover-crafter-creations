@@ -69,9 +69,9 @@ const BuyCredits = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white/5 backdrop-blur-md border-white/10 border-b shadow-sm">
+      <header className="bg-gradient-hero border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
@@ -150,8 +150,8 @@ const BuyCredits = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4 text-white">Simple, Transparent Pricing</h2>
-          <p className="text-white/85 max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
             Unlock the power of AI-generated book covers. Each credit generates 4 unique cover variations for you to choose from.
           </p>
         </div>
@@ -204,16 +204,16 @@ const BuyCredits = () => {
         </div>
 
         <div className="mt-8 text-center mb-8">
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-muted-foreground">
             *A "complete project" includes generating multiple concepts and one final high-resolution upscale.
           </p>
         </div>
 
         <div className="mt-12 text-center">
-          <Card className="max-w-2xl mx-auto bg-white/5 backdrop-blur-md border-white/10 text-white">
+          <Card className="max-w-2xl mx-auto">
             <CardContent className="pt-6">
               <h3 className="font-semibold mb-2">Need More Credits?</h3>
-              <p className="text-sm text-white/75">
+              <p className="text-sm text-muted-foreground">
                 Contact our team for custom enterprise packages and volume discounts.
               </p>
             </CardContent>

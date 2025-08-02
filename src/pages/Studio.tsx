@@ -227,9 +227,9 @@ const Studio = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white/5 backdrop-blur-md border-white/10 border-b shadow-sm">
+      <header className="bg-gradient-hero border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
