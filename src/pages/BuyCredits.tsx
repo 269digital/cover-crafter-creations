@@ -14,25 +14,25 @@ const BuyCredits = () => {
   const creditPackages = [
     {
       name: "Starter Pack",
-      credits: 25,
+      credits: 20,
       price: "$10",
       description: "Perfect for trying out Covers by AI",
-      features: ["25 AI-generated covers", "High-resolution downloads", "Commercial use rights"]
+      features: ["20 AI-generated covers", "High-resolution downloads", "Commercial use rights"]
     },
     {
       name: "Author Pack",
-      credits: 75,
+      credits: 60,
       price: "$25",
       description: "Great for indie authors",
-      features: ["75 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support"],
+      features: ["60 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support"],
       popular: true
     },
     {
       name: "Pro Pack", 
-      credits: 200,
+      credits: 150,
       price: "$50",
       description: "Best value for publishers",
-      features: ["200 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support", "Custom styles"]
+      features: ["150 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support", "Custom styles"]
     }
   ];
 
