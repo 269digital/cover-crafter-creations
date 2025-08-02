@@ -155,6 +155,27 @@ serve(async (req) => {
 
       console.log(`Generated ${generatedImages.length} images:`, generatedImages);
 
+      // Save the creation to the database for "My Covers" feature
+      const fullPrompt = `${title} by ${author} - ${genre} genre, ${style} style. ${description}`;
+      
+      const { error: insertError } = await supabase
+        .from('creations')
+        .insert({
+          user_id: userId,
+          prompt: fullPrompt,
+          image_url1: generatedImages[0] || null,
+          image_url2: generatedImages[1] || null,
+          image_url3: generatedImages[2] || null,
+          image_url4: generatedImages[3] || null,
+        });
+
+      if (insertError) {
+        console.error('Error saving creation to database:', insertError);
+        // Don't throw error - still return the generated images
+      } else {
+        console.log('Successfully saved creation to database');
+      }
+
       // Credit deduction temporarily disabled for testing
       console.log(`Credit deduction disabled - testing mode`);
 
