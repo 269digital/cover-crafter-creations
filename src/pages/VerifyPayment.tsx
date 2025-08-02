@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CreditCard, Loader2 } from "lucide-react";
+import { CreditCard, Loader2, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
 
 const VerifyPayment = () => {
   const { user, refreshCredits } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [paymentIntentId, setPaymentIntentId] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -75,12 +77,25 @@ const VerifyPayment = () => {
             <CreditCard className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">Verify Payment</h1>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/buy-credits")}
-          >
-            Back to Buy Credits
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate("/buy-credits")}
+            >
+              Back to Buy Credits
+            </Button>
+          </div>
         </div>
       </header>
 

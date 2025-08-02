@@ -3,13 +3,15 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Check, Sparkles } from "lucide-react";
+import { CreditCard, Check, Sparkles, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "next-themes";
 
 const BuyCredits = () => {
   const { user, credits, signOut } = useAuth();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   const creditPackages = [
     {
@@ -80,6 +82,17 @@ const BuyCredits = () => {
               <CreditCard className="h-4 w-4 mr-1" />
               Credits: {credits}
             </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate("/studio")}

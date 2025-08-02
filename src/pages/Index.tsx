@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Palette, Sparkles, BookOpen, CreditCard } from "lucide-react";
+import { Palette, Sparkles, BookOpen, CreditCard, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   
   // Don't use useAuth on the landing page since users aren't logged in yet
   const handleGetStarted = () => {
@@ -22,13 +24,27 @@ const Index = () => {
             <Palette className="h-8 w-8 text-white" />
             <h1 className="text-2xl font-bold text-white">Covers by AI</h1>
           </div>
-          <Button 
-            variant="secondary" 
-            onClick={() => navigate("/auth")}
-            className="shadow-glow"
-          >
-            Get Started
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="text-white hover:bg-white/10"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+            <Button 
+              variant="secondary" 
+              onClick={() => navigate("/auth")}
+              className="shadow-glow"
+            >
+              Get Started
+            </Button>
+          </div>
         </div>
       </header>
 

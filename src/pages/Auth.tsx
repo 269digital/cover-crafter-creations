@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +18,7 @@ const Auth = () => {
   const [error, setError] = useState("");
   const { signUp, signIn, user } = useAuth();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     if (user) {
@@ -80,6 +83,20 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="text-white hover:bg-white/10"
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
       <Card className="w-full max-w-md shadow-creative">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">

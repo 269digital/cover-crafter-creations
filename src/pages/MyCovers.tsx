@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { CreditCard, Download, Image, Eye, X } from "lucide-react";
+import { CreditCard, Download, Image, Eye, X, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
 
 interface Creation {
   id: string;
@@ -22,6 +23,7 @@ interface Creation {
 
 const MyCovers = () => {
   const { user, credits, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [creations, setCreations] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,6 +91,17 @@ const MyCovers = () => {
               <CreditCard className="h-4 w-4 mr-1" />
               Credits: {credits}
             </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate("/studio")}

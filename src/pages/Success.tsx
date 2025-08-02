@@ -3,15 +3,17 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, CreditCard, Loader2 } from "lucide-react";
+import { CheckCircle, CreditCard, Loader2, Moon, Sun } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
 
 const Success = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, refreshCredits } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [processed, setProcessed] = useState(false);
 
@@ -62,6 +64,19 @@ const Success = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
       <Card className="w-full max-w-md shadow-creative">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
