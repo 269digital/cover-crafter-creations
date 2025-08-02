@@ -66,27 +66,7 @@ serve(async (req) => {
       )
     }
 
-    // Check user credits
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('credits')
-      .eq('user_id', user.id)
-      .single()
-
-    if (profileError || !profile) {
-      console.error('Profile fetch error:', profileError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch user profile' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (profile.credits < 1) {
-      return new Response(
-        JSON.stringify({ error: 'Insufficient credits. You need at least 1 credit to upscale an image.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Skip credit check for free testing mode
 
     // Get Ideogram API key
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY')
@@ -148,23 +128,12 @@ serve(async (req) => {
     const upscaleData = await upscaleResponse.json()
     console.log('Upscale response:', upscaleData)
 
-    // Deduct credit only on successful upscale
-    const { error: creditError } = await supabaseClient
-      .from('profiles')
-      .update({ credits: profile.credits - 1 })
-      .eq('user_id', user.id)
-
-    if (creditError) {
-      console.error('Failed to deduct credit:', creditError)
-      // Note: This is a critical error but the upscale was successful
-      // We should still return the upscaled image but log this issue
-    }
-
+    // Skip credit deduction for free testing mode
     return new Response(
       JSON.stringify({ 
         success: true,
         upscaledImage: upscaleData.data?.[0]?.url || upscaleData.url,
-        creditsRemaining: profile.credits - 1
+        creditsRemaining: 999 // Return a high number for testing
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
