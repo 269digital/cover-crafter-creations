@@ -14,25 +14,28 @@ const BuyCredits = () => {
   const creditPackages = [
     {
       name: "Starter Pack",
-      credits: 20,
+      credits: 8,
       price: "$10",
       description: "Perfect for trying out Covers by AI",
-      features: ["20 AI-generated covers", "High-resolution downloads", "Commercial use rights"]
+      subtitle: "(Up to 2 complete cover projects)",
+      features: ["8 AI-generated covers", "High-resolution downloads", "Commercial use rights"]
     },
     {
       name: "Author Pack",
-      credits: 60,
+      credits: 24,
       price: "$25",
       description: "Great for indie authors",
-      features: ["60 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support"],
+      subtitle: "(Up to 6 complete cover projects)",
+      features: ["24 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support"],
       popular: true
     },
     {
       name: "Pro Pack", 
-      credits: 150,
+      credits: 60,
       price: "$50",
       description: "Best value for publishers",
-      features: ["150 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support", "Custom styles"]
+      subtitle: "(Up to 15 complete cover projects)",
+      features: ["60 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support", "Custom styles"]
     }
   ];
 
@@ -104,7 +107,7 @@ const BuyCredits = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4">Choose Your Credit Package</h2>
+          <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Unlock the power of AI-generated book covers. Each credit generates 4 unique cover variations for you to choose from.
           </p>
@@ -131,6 +134,7 @@ const BuyCredits = () => {
                 <div className="py-4">
                   <div className="text-3xl font-bold">{pkg.price}</div>
                   <div className="text-sm text-muted-foreground">{pkg.credits} credits</div>
+                  <div className="text-xs text-muted-foreground mt-1">{pkg.subtitle}</div>
                 </div>
               </CardHeader>
               
@@ -154,6 +158,12 @@ const BuyCredits = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        <div className="mt-8 text-center mb-8">
+          <p className="text-sm text-muted-foreground">
+            *A "complete project" includes generating multiple concepts and one final high-resolution upscale.
+          </p>
         </div>
 
         <div className="mt-12 text-center">

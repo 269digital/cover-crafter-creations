@@ -91,12 +91,12 @@ const Index = () => {
         {/* Pricing Preview */}
         <div className="text-center">
           <h3 className="text-3xl font-bold text-white mb-8">Simple, Transparent Pricing</h3>
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {[
-              { name: "Starter Pack", credits: "20 Credits", price: "$10" },
-              { name: "Author Pack", credits: "60 Credits", price: "$25", popular: true },
-              { name: "Pro Pack", credits: "150 Credits", price: "$50" }
-            ].map((pkg) => (
+        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {[
+            { name: "Starter Pack", credits: "8 Credits", subtitle: "(Up to 2 complete cover projects)", price: "$10" },
+            { name: "Author Pack", credits: "24 Credits", subtitle: "(Up to 6 complete cover projects)", price: "$25", popular: true },
+            { name: "Pro Pack", credits: "60 Credits", subtitle: "(Up to 15 complete cover projects)", price: "$50" }
+          ].map((pkg) => (
               <Card key={pkg.name} className={`bg-white/10 backdrop-blur-sm border-white/20 text-white ${pkg.popular ? 'ring-2 ring-accent' : ''}`}>
                 {pkg.popular && (
                   <div className="relative">
@@ -109,9 +109,15 @@ const Index = () => {
                   <h4 className="font-semibold text-lg mb-2">{pkg.name}</h4>
                   <div className="text-2xl font-bold mb-1">{pkg.price}</div>
                   <div className="text-white/80 text-sm">{pkg.credits}</div>
+                  <div className="text-white/60 text-xs mt-1">{pkg.subtitle}</div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+          <div className="text-center mt-8">
+            <p className="text-white/60 text-sm">
+              *A "complete project" includes generating multiple concepts and one final high-resolution upscale.
+            </p>
           </div>
         </div>
       </main>
