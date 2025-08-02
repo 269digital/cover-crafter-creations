@@ -62,3 +62,9 @@ verify_jwt = true
 
 [functions.generate-covers]
 verify_jwt = true
+
+[functions.verify-payment]
+verify_jwt = true
+
+[functions.upscale-cover]
+verify_jwt = true

@@ -13,27 +13,47 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    )
-
-    // Get the current user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    // Initialize Supabase client using the same pattern as generate-covers
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
-    if (authError || !user) {
-      console.error('Authentication error:', authError)
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables')
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Get the authorization header and extract user
+    const authHeader = req.headers.get('authorization')
+    console.log('Auth header present:', !!authHeader)
+    if (!authHeader) {
+      console.error('No authorization header provided')
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - No auth header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Extract the JWT token from the authorization header
+    const token = authHeader.replace('Bearer ', '')
+    console.log('Token extracted:', !!token)
+
+    // Use service role client to validate the JWT token
+    const { data: userData, error: authError } = await supabaseClient.auth.getUser(token)
+    if (authError || !userData.user) {
+      console.error('Auth error:', authError)
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const user = userData.user
+    console.log('Authenticated user:', user.id)
 
     const { generationId } = await req.json()
 
