@@ -150,14 +150,7 @@ const Studio = () => {
   };
 
   const handleUpscale = async (index: number) => {
-    if (credits < 1) {
-      toast({
-        title: "Insufficient Credits",
-        description: "You need at least 1 credit to upscale an image. Please purchase more credits.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Skip credit check for free testing mode
 
     const imageInfo = imageData[index];
     console.log('Attempting to upscale image at index:', index, 'with imageInfo:', imageInfo);
