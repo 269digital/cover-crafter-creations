@@ -35,7 +35,7 @@ const BuyCredits = () => {
       price: "$50",
       description: "Best value for publishers",
       subtitle: "(Up to 15 complete cover projects)",
-      features: ["60 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support", "Custom styles"]
+      features: ["60 AI-generated covers", "High-resolution downloads", "Commercial use rights", "Priority support"]
     }
   ];
 
