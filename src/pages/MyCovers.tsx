@@ -212,13 +212,6 @@ const MyCovers = () => {
                   className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg"
                 />
               </div>
-              <Button
-                className="w-full"
-                onClick={() => handleDownload(selectedImage)}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download High-Resolution
-              </Button>
             </div>
           )}
         </DialogContent>
