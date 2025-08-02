@@ -160,6 +160,8 @@ const Studio = () => {
     }
 
     const imageInfo = imageData[index];
+    console.log('Attempting to upscale image at index:', index, 'with imageInfo:', imageInfo);
+    
     if (!imageInfo?.generationId) {
       toast({
         title: "Upscale Failed",
@@ -168,6 +170,8 @@ const Studio = () => {
       });
       return;
     }
+
+    console.log('Sending upscale request with generationId:', imageInfo.generationId);
 
     // Set upscaling state
     setImageData(prev => prev.map((img, idx) => 

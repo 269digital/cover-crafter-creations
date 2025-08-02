@@ -56,8 +56,10 @@ serve(async (req) => {
     console.log('Authenticated user:', user.id)
 
     const { generationId } = await req.json()
+    console.log('Received upscale request with generationId:', generationId)
 
     if (!generationId) {
+      console.error('No generation ID provided')
       return new Response(
         JSON.stringify({ error: 'Generation ID is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -96,16 +98,10 @@ serve(async (req) => {
       )
     }
 
-    // Check if generation ID is valid (not a fallback ID)
+    // For now, let's try to upscale even with fallback generation IDs to see what happens
+    console.log('Attempting to upscale with generationId:', generationId)
     if (generationId.startsWith('gen_')) {
-      console.log('Invalid generation ID detected:', generationId)
-      return new Response(
-        JSON.stringify({ 
-          error: 'This image cannot be upscaled. Generation ID not available from the original generation.',
-          details: 'The image was generated without a proper generation ID for upscaling.'
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      console.log('Warning: Using fallback generation ID. Upscale may fail.')
     }
 
     // Call Ideogram upscale API
