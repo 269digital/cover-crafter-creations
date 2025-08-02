@@ -81,8 +81,22 @@ serve(async (req) => {
     // Download the image from the provided URL
     console.log('Downloading image from URL:', imageUrl)
     const imageResponse = await fetch(imageUrl)
+    console.log('Image download response status:', imageResponse.status)
+    
     if (!imageResponse.ok) {
-      console.error('Failed to download image:', imageResponse.status)
+      console.error('Failed to download image:', imageResponse.status, imageResponse.statusText)
+      
+      // Check if it's an expired URL (common with Ideogram temporary URLs)
+      if (imageResponse.status === 403 || imageResponse.status === 404) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'The image URL has expired. This happens with images that are several hours old. Please try regenerating the cover in the Studio instead.',
+            expired: true
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
       return new Response(
         JSON.stringify({ error: 'Failed to download the image for upscaling' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -90,6 +104,7 @@ serve(async (req) => {
     }
 
     const imageBuffer = await imageResponse.arrayBuffer()
+    console.log('Downloaded image size:', imageBuffer.byteLength, 'bytes')
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
 
     // Create FormData for the upscale API

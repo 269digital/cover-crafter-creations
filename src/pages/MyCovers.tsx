@@ -91,6 +91,14 @@ const MyCovers = () => {
         throw new Error(error.message);
       }
 
+      if (data?.error) {
+        // Check if it's an expired URL error
+        if (data.expired) {
+          throw new Error(data.error);
+        }
+        throw new Error(data.error);
+      }
+
       if (data?.success) {
         // Update the creation in the database with the upscaled image
         const updateData: any = {};
