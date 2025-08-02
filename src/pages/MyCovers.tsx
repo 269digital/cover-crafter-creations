@@ -191,7 +191,7 @@ const MyCovers = () => {
 
       {/* Image Preview Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
           <DialogHeader className="flex flex-row items-center justify-between">
             <DialogTitle>Book Cover Preview</DialogTitle>
             <Button
@@ -204,12 +204,14 @@ const MyCovers = () => {
             </Button>
           </DialogHeader>
           {selectedImage && (
-            <div className="space-y-4">
-              <img
-                src={selectedImage}
-                alt="Cover Preview"
-                className="w-full rounded-lg"
-              />
+            <div className="space-y-4 overflow-auto max-h-[calc(90vh-120px)]">
+              <div className="flex justify-center">
+                <img
+                  src={selectedImage}
+                  alt="Cover Preview"
+                  className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg"
+                />
+              </div>
               <Button
                 className="w-full"
                 onClick={() => handleDownload(selectedImage)}
