@@ -202,16 +202,19 @@ const MyCovers = () => {
       {/* Image Preview Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-          <DialogHeader className="flex flex-row items-center justify-between">
-            <DialogTitle>Book Cover Preview</DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedImage(null)}
-              className="h-6 w-6 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Book Cover Preview</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedImage(null)}
+                className="h-6 w-6 p-0 hover:bg-gray-100"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </div>
           </DialogHeader>
           {selectedImage && (
             <div className="space-y-4 overflow-auto max-h-[calc(90vh-120px)]">
