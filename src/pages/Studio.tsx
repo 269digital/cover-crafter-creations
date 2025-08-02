@@ -230,58 +230,49 @@ const Studio = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Palette className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Covers by AI</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            {/* Credit system temporarily disabled */}
-            {/* <Badge variant="secondary" className="px-3 py-1">
-              <CreditCard className="h-4 w-4 mr-1" />
-              Credits: {credits}
-            </Badge>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => {
-                console.log('Manual refresh clicked, current credits:', credits);
-                refreshCredits();
-              }}
-            >
-              🔄
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/buy-credits")}
-            >
-              Buy Credits
-            </Button> */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                console.log("Dark mode toggle clicked, current theme:", theme);
-                const newTheme = theme === "dark" ? "light" : "dark";
-                console.log("Switching to theme:", newTheme);
-                setTheme(newTheme);
-              }}
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/my-covers")}
-            >
-              My Covers
-            </Button>
-            <Button variant="ghost" onClick={handleSignOut}>
-              Sign Out
-            </Button>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center space-x-2">
+              <Palette className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">Covers by AI</h1>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  console.log("Dark mode toggle clicked, current theme:", theme);
+                  const newTheme = theme === "dark" ? "light" : "dark";
+                  console.log("Switching to theme:", newTheme);
+                  setTheme(newTheme);
+                }}
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/my-covers")}
+                className="hidden sm:inline-flex"
+              >
+                My Covers
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/my-covers")}
+                className="sm:hidden"
+              >
+                Covers
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -413,7 +404,7 @@ const Studio = () => {
               {imageData.length > 0 && (
                 <div className="pt-6 border-t">
                   <h3 className="font-semibold mb-4">Generated Covers</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {imageData.map((image, index) => (
                       <div key={index} className="relative group">
                         <img 
@@ -426,7 +417,42 @@ const Studio = () => {
                             Upscaled
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg">
+                        {/* Mobile buttons - always visible */}
+                        <div className="absolute bottom-2 left-2 right-2 sm:hidden">
+                          {!image.isUpscaled ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleUpscale(index)}
+                              disabled={image.isUpscaling}
+                              className="w-full bg-white/95 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold text-xs"
+                            >
+                              {image.isUpscaling ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-gray-900 border-t-transparent mr-1"></div>
+                                  Upscaling...
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="h-3 w-3 mr-1" />
+                                  Upscale (1 Credit)
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="hero"
+                              onClick={() => handleDownload(image.url, index)}
+                              className="w-full font-semibold text-xs"
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              Download HD
+                            </Button>
+                          )}
+                        </div>
+                        {/* Desktop buttons - hover overlay */}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg hidden sm:block">
                           <div className="flex flex-col items-center justify-center h-full gap-3 p-4">
                             {!image.isUpscaled ? (
                               <Button
@@ -471,7 +497,7 @@ const Studio = () => {
               {!generating && imageData.length === 0 && (
                 <div className="pt-6 border-t">
                   <h3 className="font-semibold mb-4">Generated Covers</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[1, 2, 3, 4].map((i) => (
                       <div 
                         key={i} 
