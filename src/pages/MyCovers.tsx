@@ -17,7 +17,7 @@ interface Creation {
   image_url3: string | null;
   image_url4: string | null;
   created_at: string;
-  upscaled_images?: string; // JSON string of upscaled image indices
+  upscaled_image_url: string | null; // Permanently stored upscaled image
 }
 
 const MyCovers = () => {
@@ -39,6 +39,7 @@ const MyCovers = () => {
         .from("creations")
         .select("*")
         .eq("user_id", user?.id)
+        .not("upscaled_image_url", "is", null) // Only fetch creations with upscaled images
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -69,13 +70,9 @@ const MyCovers = () => {
     document.body.removeChild(link);
   };
 
-  const getAllImages = (creation: Creation): string[] => {
-    return [
-      creation.image_url1,
-      creation.image_url2,
-      creation.image_url3,
-      creation.image_url4
-    ].filter(Boolean) as string[];
+  // Since we only store upscaled images, just return the single upscaled image URL
+  const getUpscaledImage = (creation: Creation): string | null => {
+    return creation.upscaled_image_url;
   };
 
   return (
@@ -113,9 +110,9 @@ const MyCovers = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-2">Your Book Covers</h2>
+          <h2 className="text-2xl font-bold mb-2">Your HD Book Covers</h2>
           <p className="text-muted-foreground">
-            Browse and download your AI-generated book covers
+            Your permanently saved upscaled book covers - download anytime in high quality
           </p>
         </div>
 
@@ -135,52 +132,53 @@ const MyCovers = () => {
           <Card className="text-center py-12">
             <CardContent>
               <Image className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">No covers created yet</h3>
+              <h3 className="font-semibold mb-2">No HD covers saved yet</h3>
               <p className="text-muted-foreground mb-4">
-                Start creating amazing book covers with AI
+                Create covers in the Studio and upscale them to save them permanently to your collection
               </p>
               <Button onClick={() => {
                 console.log("Create Your First Cover button clicked, navigating to /studio");
                 navigate("/studio");
               }}>
-                Create Your First Cover
+                Go to Studio
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {creations.map((creation) => {
-              const images = getAllImages(creation);
-              return images.map((imageUrl, index) => (
-                <Card key={`${creation.id}-${index}`} className="group hover:shadow-lg transition-shadow">
+              const upscaledImageUrl = getUpscaledImage(creation);
+              if (!upscaledImageUrl) return null;
+              
+              return (
+                <Card key={creation.id} className="group hover:shadow-lg transition-shadow">
                   <div className="aspect-[2/3] relative overflow-hidden rounded-t-lg">
                     <img
-                      src={imageUrl}
-                      alt={`Cover ${index + 1}`}
+                      src={upscaledImageUrl}
+                      alt="Upscaled book cover"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
                        <Button
                          size="sm"
                          variant="secondary"
-                         onClick={() => setSelectedImage(imageUrl)}
+                         onClick={() => setSelectedImage(upscaledImageUrl)}
                        >
                          <Eye className="h-4 w-4" />
                        </Button>
                        <Button
                          size="sm"
                          variant="secondary"
-                         onClick={() => handleDownload(imageUrl)}
-                         className="min-w-[80px]"
+                         onClick={() => handleDownload(upscaledImageUrl)}
+                         className="min-w-[100px]"
                        >
                          <Download className="h-4 w-4 mr-1" />
-                         Download
+                         Download HD
                        </Button>
                      </div>
-                     {/* Upscaled Badge - will be visible when implemented */}
                      <div className="absolute top-2 right-2">
                        <Badge variant="secondary" className="text-xs bg-green-600 text-white">
-                         HD
+                         HD SAVED
                        </Badge>
                      </div>
                   </div>
@@ -193,7 +191,7 @@ const MyCovers = () => {
                     </p>
                   </CardContent>
                 </Card>
-              ));
+              );
             })}
           </div>
         )}

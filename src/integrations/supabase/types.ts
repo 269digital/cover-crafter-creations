@@ -23,6 +23,7 @@ export type Database = {
           image_url3: string | null
           image_url4: string | null
           prompt: string
+          upscaled_image_url: string | null
           user_id: string
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           image_url3?: string | null
           image_url4?: string | null
           prompt: string
+          upscaled_image_url?: string | null
           user_id: string
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           image_url3?: string | null
           image_url4?: string | null
           prompt?: string
+          upscaled_image_url?: string | null
           user_id?: string
         }
         Relationships: []

@@ -143,11 +143,95 @@ serve(async (req) => {
     const upscaleData = await upscaleResponse.json()
     console.log('Upscale response:', upscaleData)
 
-    // Skip credit deduction for free testing mode
+    const upscaledImageUrl = upscaleData.data?.[0]?.url || upscaleData.url
+    
+    if (!upscaledImageUrl) {
+      console.error('No upscaled image URL in response')
+      return new Response(
+        JSON.stringify({ error: 'Failed to get upscaled image URL' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Background task to download and store the upscaled image
+    const storeImageTask = async () => {
+      try {
+        console.log('Downloading upscaled image for storage:', upscaledImageUrl)
+        
+        // Download the upscaled image
+        const upscaledImageResponse = await fetch(upscaledImageUrl)
+        if (!upscaledImageResponse.ok) {
+          console.error('Failed to download upscaled image:', upscaledImageResponse.status)
+          return
+        }
+
+        const upscaledImageBuffer = await upscaledImageResponse.arrayBuffer()
+        const timestamp = Date.now()
+        const fileName = `${user.id}/${timestamp}_upscaled.jpg`
+        
+        console.log('Storing upscaled image in Supabase Storage:', fileName)
+        
+        // Store in Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+          .from('upscaled-covers')
+          .upload(fileName, upscaledImageBuffer, {
+            contentType: 'image/jpeg',
+            upsert: false
+          })
+
+        if (uploadError) {
+          console.error('Error uploading to storage:', uploadError)
+          return
+        }
+
+        // Get the public URL
+        const { data: publicUrlData } = supabaseClient.storage
+          .from('upscaled-covers')
+          .getPublicUrl(fileName)
+
+        const storedImageUrl = publicUrlData.publicUrl
+        console.log('Stored image URL:', storedImageUrl)
+
+        // Find the creation record to update (match by original image URL)
+        const { data: creations, error: findError } = await supabaseClient
+          .from('creations')
+          .select('id')
+          .eq('user_id', user.id)
+          .or(`image_url1.eq.${imageUrl},image_url2.eq.${imageUrl},image_url3.eq.${imageUrl},image_url4.eq.${imageUrl}`)
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        if (findError || !creations?.length) {
+          console.error('Could not find creation to update:', findError)
+          return
+        }
+
+        // Update the creation record with the stored image URL
+        const { error: updateError } = await supabaseClient
+          .from('creations')
+          .update({ upscaled_image_url: storedImageUrl })
+          .eq('id', creations[0].id)
+
+        if (updateError) {
+          console.error('Error updating creation with stored image URL:', updateError)
+        } else {
+          console.log('Successfully updated creation with stored image URL')
+        }
+
+      } catch (error) {
+        console.error('Error in background storage task:', error)
+      }
+    }
+
+    // Start background task (don't await)
+    EdgeRuntime.waitUntil(storeImageTask())
+
+    // Return immediate response with temporary upscaled image
     return new Response(
       JSON.stringify({ 
         success: true,
-        upscaledImage: upscaleData.data?.[0]?.url || upscaleData.url,
+        upscaledImage: upscaledImageUrl,
+        message: "Image upscaled successfully! It will be permanently saved to your collection shortly.",
         creditsRemaining: 999 // Return a high number for testing
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
