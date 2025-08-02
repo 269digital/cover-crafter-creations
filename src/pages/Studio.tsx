@@ -441,7 +441,7 @@ const Studio = () => {
                               ) : (
                                 <>
                                   <Zap className="h-3 w-3 mr-1" />
-                                  Upscale (1 Credit)
+                                   Upscale (2 Credits)
                                 </>
                               )}
                             </Button>
@@ -476,7 +476,7 @@ const Studio = () => {
                                 ) : (
                                   <>
                                     <Zap className="h-4 w-4 mr-2" />
-                                    Upscale (1 Credit)
+                                    Upscale (2 Credits)
                                   </>
                                 )}
                               </Button>

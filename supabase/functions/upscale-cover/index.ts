@@ -66,7 +66,42 @@ serve(async (req) => {
       )
     }
 
-    // Skip credit check for free testing mode
+    // Check user credits and deduct 2 credits for upscaling
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('credits')
+      .eq('user_id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      console.error('Error fetching user profile:', profileError)
+      return new Response(
+        JSON.stringify({ error: 'Unable to verify credits' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (profile.credits < 2) {
+      console.error('Insufficient credits:', profile.credits)
+      return new Response(
+        JSON.stringify({ error: 'Insufficient credits. You need 2 credits to upscale an image.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Deduct 2 credits
+    const { error: updateError } = await supabaseClient
+      .from('profiles')
+      .update({ credits: profile.credits - 2 })
+      .eq('user_id', user.id)
+
+    if (updateError) {
+      console.error('Error updating credits:', updateError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to process credits' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Get Ideogram API key
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY')
@@ -232,7 +267,7 @@ serve(async (req) => {
         success: true,
         upscaledImage: upscaledImageUrl,
         message: "Image upscaled successfully! It will be permanently saved to your collection shortly.",
-        creditsRemaining: 999 // Return a high number for testing
+        creditsRemaining: profile.credits - 2
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
