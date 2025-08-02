@@ -222,7 +222,9 @@ const MyCovers = () => {
                 <img
                   src={selectedImage}
                   alt="Cover Preview"
-                  className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg"
+                  className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg cursor-pointer"
+                  onClick={() => setSelectedImage(null)}
+                  title="Click to close"
                 />
               </div>
             </div>
