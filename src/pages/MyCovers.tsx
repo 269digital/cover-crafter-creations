@@ -27,6 +27,7 @@ const MyCovers = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [upscalingImages, setUpscalingImages] = useState<Set<string>>(new Set());
+  const [upscaledImages, setUpscaledImages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -103,6 +104,8 @@ const MyCovers = () => {
         if (updateError) {
           console.error('Error updating creation:', updateError);
         } else {
+          // Mark this image as upscaled
+          setUpscaledImages(prev => new Set(prev).add(imageKey));
           // Refresh the creations to show the updated image
           await fetchCreations();
         }
@@ -227,31 +230,49 @@ const MyCovers = () => {
                        >
                          <Eye className="h-4 w-4" />
                        </Button>
-                       {(() => {
-                         const imageKey = `${creation.id}-${index}`;
-                         const isUpscaling = upscalingImages.has(imageKey);
-                         return (
-                           <Button
-                             size="sm"
-                             variant="secondary"
-                             onClick={() => handleUpscale(imageUrl, creation.id, index)}
-                             disabled={isUpscaling}
-                             className="min-w-[80px]"
-                           >
-                             {isUpscaling ? (
-                               <>
-                                 <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent mr-1"></div>
-                                 Upscaling...
-                               </>
-                             ) : (
-                               <>
-                                 <Zap className="h-4 w-4 mr-1" />
-                                 Upscale (2 Credits)
-                               </>
-                             )}
-                           </Button>
-                         );
-                       })()}
+                        {(() => {
+                          const imageKey = `${creation.id}-${index}`;
+                          const isUpscaling = upscalingImages.has(imageKey);
+                          const isUpscaled = upscaledImages.has(imageKey);
+                          
+                          if (isUpscaled) {
+                            // Show download button for upscaled images
+                            return (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleDownload(imageUrl)}
+                                className="min-w-[80px]"
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Download HD
+                              </Button>
+                            );
+                          } else {
+                            // Show upscale button for non-upscaled images
+                            return (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleUpscale(imageUrl, creation.id, index)}
+                                disabled={isUpscaling}
+                                className="min-w-[80px]"
+                              >
+                                {isUpscaling ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent mr-1"></div>
+                                    Upscaling...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Zap className="h-4 w-4 mr-1" />
+                                    Upscale (2 Credits)
+                                  </>
+                                )}
+                              </Button>
+                            );
+                          }
+                        })()}
                      </div>
                   </div>
                   <CardContent className="p-4">
