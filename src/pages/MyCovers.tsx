@@ -199,47 +199,44 @@ const MyCovers = () => {
         )}
       </div>
 
-      {/* Image Preview Modal */}
-      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-          {/* Close button overlay - always visible */}
-          <Button
-            variant="ghost"
-            size="sm"
+      {/* Image Preview Modal - Simple Implementation */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => {
+            console.log('Backdrop clicked - closing modal');
+            setSelectedImage(null);
+          }}
+        >
+          {/* Close Button - Top Right */}
+          <button
             onClick={(e) => {
-              console.log('Close button clicked');
+              console.log('X button clicked');
               e.stopPropagation();
               setSelectedImage(null);
             }}
-            className="absolute top-4 right-4 z-50 h-8 w-8 p-0 bg-black/50 hover:bg-black/70 text-white rounded-full"
+            className="absolute top-8 right-8 z-60 w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-gray-100 shadow-lg"
           >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </Button>
+            <X className="h-6 w-6 text-black" />
+          </button>
           
-          {selectedImage && (
-            <div 
-              className="relative w-full h-full flex items-center justify-center p-4 cursor-pointer"
-              onClick={(e) => {
-                console.log('Container clicked');
-                e.stopPropagation();
+          {/* Image Container */}
+          <div 
+            className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={selectedImage}
+              alt="Cover Preview"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg"
+              onClick={() => {
+                console.log('Image clicked - closing modal');
                 setSelectedImage(null);
               }}
-            >
-              <img
-                src={selectedImage}
-                alt="Cover Preview"
-                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-lg"
-                onClick={(e) => {
-                  console.log('Image clicked');
-                  e.stopPropagation();
-                  setSelectedImage(null);
-                }}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
