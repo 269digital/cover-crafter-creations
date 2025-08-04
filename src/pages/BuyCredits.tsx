@@ -77,12 +77,6 @@ const BuyCredits = () => {
             <div className="flex items-center space-x-2">
               <CreditCard className="h-6 w-6 text-white" />
               <h1 className="text-xl font-bold text-white">Buy Credits</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium bg-white/10 text-white border-white/20">
-                <CreditCard className="h-4 w-4 mr-1" />
-                {credits} Credits
-              </Badge>
               <Button
                 variant="ghost"
                 size="sm"
@@ -98,6 +92,12 @@ const BuyCredits = () => {
                   <Moon className="h-4 w-4" />
                 )}
               </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium bg-white/10 text-white border-white/20">
+                <CreditCard className="h-4 w-4 mr-1" />
+                {credits} Credits
+              </Badge>
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/10">
                 Sign Out
               </Button>
