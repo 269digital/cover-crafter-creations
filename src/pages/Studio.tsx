@@ -82,6 +82,7 @@ const Studio = () => {
       const { data, error } = await supabase.functions.invoke('generate-covers', {
         body: { 
           title: bookTitle,
+          subtitle: bookSubtitle,
           author: authorName,
           genre,
           style,
