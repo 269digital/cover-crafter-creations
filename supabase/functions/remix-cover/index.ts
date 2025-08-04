@@ -76,10 +76,18 @@ serve(async (req) => {
     let imageId = ideogramId;
     if (!imageId && originalImageUrl) {
       // Try to extract ID from Ideogram URL pattern
-      const urlMatch = originalImageUrl.match(/\/([a-zA-Z0-9_-]+)\.(png|jpg|jpeg|webp)/);
+      const urlMatch = originalImageUrl.match(/\/ephemeral\/([a-zA-Z0-9_-]+)\./);
       if (urlMatch) {
         imageId = urlMatch[1];
         console.log(`Extracted image ID from URL: ${imageId}`);
+      } else {
+        // Try to extract from stored upscaled cover URL pattern
+        const storedMatch = originalImageUrl.match(/\/upscaled-covers\/[^\/]+\/(\d+)_upscaled/);
+        if (storedMatch) {
+          // For stored images, we need to find the original creation to get the ideogram_id
+          console.log('Image is stored, need to find original ideogram_id from database');
+          throw new Error('Cannot remix stored images without original Ideogram ID. Please remix from recently generated covers.');
+        }
       }
     }
 

@@ -142,10 +142,12 @@ serve(async (req) => {
         
         if (result.data && result.data.length > 0) {
           generatedImages.push(result.data[0].url);
-          // The generation ID should be at the top level of the response
-          const genId = result.id || result.generation_id || result.data[0].id;
-          console.log(`Extracted generation ID for cover ${i + 1}:`, genId);
-          generationIds.push(genId || `gen_${Date.now()}_${i}`);
+          // Extract image ID from the URL since Ideogram doesn't provide generation_id in response
+          const imageUrl = result.data[0].url;
+          const imageIdMatch = imageUrl.match(/\/ephemeral\/([a-zA-Z0-9_-]+)\./);
+          const imageId = imageIdMatch ? imageIdMatch[1] : null;
+          console.log(`Extracted image ID for cover ${i + 1}:`, imageId);
+          generationIds.push(imageId || `fallback_${Date.now()}_${i}`);
         }
       }
 
