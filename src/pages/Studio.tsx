@@ -241,6 +241,15 @@ const Studio = () => {
                 <CreditCard className="h-4 w-4 mr-1" />
                 {credits} Credits
               </Badge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/buy-credits")}
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+              >
+                <CreditCard className="h-4 w-4 mr-1" />
+                Buy Credits
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
