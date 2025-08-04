@@ -22,7 +22,7 @@ const Studio = () => {
   const [genre, setGenre] = useState("");
   const [style, setStyle] = useState("");
   const [bookTitle, setBookTitle] = useState("");
-  const [bookSubtitle, setBookSubtitle] = useState("");
+  
   const [authorName, setAuthorName] = useState("");
   const [description, setDescription] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -82,7 +82,6 @@ const Studio = () => {
       const { data, error } = await supabase.functions.invoke('generate-covers', {
         body: { 
           title: bookTitle,
-          subtitle: bookSubtitle,
           author: authorName,
           genre,
           style,
@@ -353,16 +352,6 @@ const Studio = () => {
                 />
               </div>
 
-              {/* Book Subtitle */}
-              <div className="space-y-2">
-                <Label htmlFor="subtitle">Book Subtitle</Label>
-                <Input
-                  id="subtitle"
-                  placeholder="Enter book subtitle (optional)"
-                  value={bookSubtitle}
-                  onChange={(e) => setBookSubtitle(e.target.value)}
-                />
-              </div>
 
               {/* Author Name */}
               <div className="space-y-2">
