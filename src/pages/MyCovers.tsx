@@ -92,6 +92,15 @@ const MyCovers = () => {
                 <CreditCard className="h-4 w-4 mr-1" />
                 {credits} Credits
               </Badge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/buy-credits")}
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+              >
+                <CreditCard className="h-4 w-4 mr-1" />
+                Buy Credits
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -125,22 +134,6 @@ const MyCovers = () => {
               className="sm:hidden bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Create
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate("/buy-credits")}
-              className="hidden sm:inline-flex bg-white/10 text-white border-white/20 hover:bg-white/20"
-            >
-              Buy Credits
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate("/buy-credits")}
-              className="sm:hidden bg-white/10 text-white border-white/20 hover:bg-white/20"
-            >
-              Credits
             </Button>
             <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/10">
               Sign Out
