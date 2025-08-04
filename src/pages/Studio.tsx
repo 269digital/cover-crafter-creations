@@ -439,7 +439,6 @@ const Studio = () => {
                 />
               </div>
 
-
               {/* Author Name */}
               <div className="space-y-2">
                 <Label htmlFor="author">Author Name</Label>
@@ -462,23 +461,6 @@ const Studio = () => {
                   rows={4}
                 />
               </div>
-
-              {/* Credit Warning - temporarily disabled */}
-              {/* {credits === 0 && (
-                <Alert>
-                  <CreditCard className="h-4 w-4" />
-                  <AlertDescription>
-                    You are out of credits! 
-                    <Button 
-                      variant="link" 
-                      className="p-0 ml-1 h-auto"
-                      onClick={() => navigate("/buy-credits")}
-                    >
-                      Buy credits to generate covers.
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )} */}
 
               {/* Important Notice */}
               <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
