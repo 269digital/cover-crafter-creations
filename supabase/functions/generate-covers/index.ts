@@ -53,7 +53,7 @@ serve(async (req) => {
     console.log(`Authenticated user: ${userId}`);
 
     // Get request body
-    const { title, author, bookSubtitle, genre, style, description } = await req.json();
+    const { title, author, genre, style, description } = await req.json();
     console.log(`Request from user ${userId} for: ${title} by ${author}`);
 
     // Credit check temporarily disabled for testing
@@ -88,8 +88,7 @@ serve(async (req) => {
     console.log('Generating 4 covers with Ideogram...');
     
     // Create detailed prompt for book cover
-    const titleText = bookSubtitle ? `"${title}: ${bookSubtitle}"` : `"${title}"`;
-    const basePrompt = `Professional book cover design for ${titleText} by ${author}. ${genre} genre, ${style} style. ${description}. High quality, publishable book cover with title and author text, professional typography, book cover layout, 2:3 aspect ratio`;
+    const basePrompt = `Professional book cover design for "${title}" by ${author}. ${genre} genre, ${style} style. ${description}. High quality, publishable book cover with title and author text, professional typography, book cover layout, 2:3 aspect ratio`;
     
     console.log(`Generating 4 covers with base prompt: ${basePrompt}`);
 
@@ -157,8 +156,7 @@ serve(async (req) => {
       console.log(`Generated ${generatedImages.length} images:`, generatedImages);
 
       // Save the creation to the database for "My Covers" feature
-      const fullTitleText = bookSubtitle ? `${title}: ${bookSubtitle}` : title;
-      const fullPrompt = `${fullTitleText} by ${author} - ${genre} genre, ${style} style. ${description}`;
+      const fullPrompt = `${title} by ${author} - ${genre} genre, ${style} style. ${description}`;
       
       const { error: insertError } = await supabase
         .from('creations')
