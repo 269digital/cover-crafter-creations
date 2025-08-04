@@ -22,6 +22,7 @@ const Studio = () => {
   const [genre, setGenre] = useState("");
   const [style, setStyle] = useState("");
   const [bookTitle, setBookTitle] = useState("");
+  const [bookSubtitle, setBookSubtitle] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [description, setDescription] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -348,6 +349,17 @@ const Studio = () => {
                   placeholder="Enter your book title"
                   value={bookTitle}
                   onChange={(e) => setBookTitle(e.target.value)}
+                />
+              </div>
+
+              {/* Book Subtitle */}
+              <div className="space-y-2">
+                <Label htmlFor="subtitle">Book Subtitle</Label>
+                <Input
+                  id="subtitle"
+                  placeholder="Enter book subtitle (optional)"
+                  value={bookSubtitle}
+                  onChange={(e) => setBookSubtitle(e.target.value)}
                 />
               </div>
 
