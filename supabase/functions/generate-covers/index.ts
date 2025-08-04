@@ -167,6 +167,7 @@ serve(async (req) => {
           image_url2: generatedImages[1] || null,
           image_url3: generatedImages[2] || null,
           image_url4: generatedImages[3] || null,
+          ideogram_id: generationIds[0] || null, // Store the first generation ID for remix
         });
 
       if (insertError) {

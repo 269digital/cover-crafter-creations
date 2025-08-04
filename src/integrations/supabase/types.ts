@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          ideogram_id: string | null
           image_url1: string | null
           image_url2: string | null
           image_url3: string | null
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          ideogram_id?: string | null
           image_url1?: string | null
           image_url2?: string | null
           image_url3?: string | null
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          ideogram_id?: string | null
           image_url1?: string | null
           image_url2?: string | null
           image_url3?: string | null
