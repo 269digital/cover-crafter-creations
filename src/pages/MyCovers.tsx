@@ -3,10 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { CreditCard, Download, Image, Eye, X, Moon, Sun, RefreshCw } from "lucide-react";
+import { CreditCard, Download, Image, Eye, X, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -32,9 +29,6 @@ const MyCovers = () => {
   const [creations, setCreations] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [remixModal, setRemixModal] = useState<{ open: boolean; creation: Creation | null }>({ open: false, creation: null });
-  const [remixPrompt, setRemixPrompt] = useState("");
-  const [remixing, setRemixing] = useState<string | null>(null); // Track which creation is being remixed
 
   useEffect(() => {
     if (user) {
@@ -84,62 +78,6 @@ const MyCovers = () => {
     return creation.upscaled_image_url;
   };
 
-  const handleRemix = (creation: Creation) => {
-    setRemixModal({ open: true, creation });
-    setRemixPrompt("");
-  };
-
-  const handleRemixSubmit = async () => {
-    if (!remixModal.creation || !remixPrompt.trim()) return;
-    
-    const creation = remixModal.creation;
-    setRemixing(creation.id);
-    setRemixModal({ open: false, creation: null });
-
-    try {
-      toast({
-        title: "Starting remix...",
-        description: "Your cover is being remixed. This may take 30-60 seconds.",
-      });
-
-      const { data, error } = await supabase.functions.invoke('remix-cover', {
-        body: {
-          originalImageUrl: creation.upscaled_image_url,
-          originalPrompt: creation.prompt,
-          additionalPrompt: remixPrompt,
-          ideogramId: creation.ideogram_id
-        }
-      });
-
-      if (error) {
-        console.error('Remix error:', error);
-        toast({
-          title: "Remix failed",
-          description: error.message || "Failed to remix cover. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Remix completed!",
-        description: "Your remixed cover has been added to your collection.",
-      });
-
-      // Refresh the creations list
-      fetchCreations();
-
-    } catch (error: any) {
-      console.error('Remix error:', error);
-      toast({
-        title: "Remix failed",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setRemixing(null);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -267,19 +205,6 @@ const MyCovers = () => {
                        <Button
                          size="sm"
                          variant="secondary"
-                         onClick={() => handleRemix(creation)}
-                         disabled={remixing === creation.id}
-                       >
-                         {remixing === creation.id ? (
-                           <RefreshCw className="h-4 w-4 animate-spin" />
-                         ) : (
-                           <RefreshCw className="h-4 w-4 mr-1" />
-                         )}
-                         {remixing === creation.id ? "Remixing..." : "Remix"}
-                       </Button>
-                       <Button
-                         size="sm"
-                         variant="secondary"
                          onClick={() => handleDownload(upscaledImageUrl)}
                          className="min-w-[100px]"
                        >
@@ -308,41 +233,6 @@ const MyCovers = () => {
          )}
       </div>
 
-      {/* Remix Modal */}
-      <Dialog open={remixModal.open} onOpenChange={(open) => setRemixModal({ open, creation: null })}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Remix Cover</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Original Prompt:</label>
-              <p className="text-sm text-muted-foreground mt-1 p-3 bg-muted rounded">
-                {remixModal.creation?.prompt}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Additional Instructions:</label>
-              <Textarea
-                value={remixPrompt}
-                onChange={(e) => setRemixPrompt(e.target.value)}
-                placeholder="e.g., Make the text gold, Change the background to a dark forest, Add more dramatic lighting..."
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setRemixModal({ open: false, creation: null })}>
-                Cancel
-              </Button>
-              <Button onClick={handleRemixSubmit} disabled={!remixPrompt.trim()}>
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Start Remix
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Image Preview Modal - Simple Implementation */}
       {selectedImage && (

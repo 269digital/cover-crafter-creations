@@ -64,8 +64,8 @@ serve(async (req) => {
       throw new Error('Profile not found');
     }
 
-    if (profile.credits < 3) {
-      throw new Error('Insufficient credits. Remix costs 3 credits.');
+    if (profile.credits < 2) {
+      throw new Error('Insufficient credits. Remix costs 2 credits.');
     }
 
     // Create combined prompt
@@ -191,7 +191,7 @@ serve(async (req) => {
     // Deduct credits
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ credits: profile.credits - 3 })
+      .update({ credits: profile.credits - 2 })
       .eq('user_id', userId);
 
     if (updateError) {
@@ -205,7 +205,7 @@ serve(async (req) => {
       success: true,
       message: "Cover remixed successfully!",
       imageUrl: completedResult.url,
-      creditsRemaining: profile.credits - 3
+      creditsRemaining: profile.credits - 2
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
