@@ -88,7 +88,7 @@ serve(async (req) => {
     console.log('Generating 4 covers with Ideogram...');
     
     // Create detailed prompt for book cover
-    const basePrompt = `Professional book cover design for "${title}" by ${author}. ${genre} genre, ${style} style. ${description}. High quality, publishable book cover with title and author text, professional typography, book cover layout, 2:3 aspect ratio`;
+    const basePrompt = `Professional book cover design for "${title}" by ${author}. ${genre} genre, ${style} style. ${description}. High quality, publishable book cover with ONLY the exact title "${title}" and author name "${author}" as text, no other text or words, professional typography, book cover layout, 2:3 aspect ratio`;
     
     console.log(`Generating 4 covers with base prompt: ${basePrompt}`);
 
