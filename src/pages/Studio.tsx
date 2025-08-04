@@ -231,44 +231,42 @@ const Studio = () => {
       {/* Header */}
       <header className="bg-gradient-hero border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-start justify-between flex-wrap gap-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
               <Palette className="h-6 w-6 text-white" />
               <h1 className="text-xl font-bold text-white">Covers by AI</h1>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  console.log("Dark mode toggle clicked, current theme:", theme);
+                  const newTheme = theme === "dark" ? "light" : "dark";
+                  console.log("Switching to theme:", newTheme);
+                  setTheme(newTheme);
+                }}
+                className="text-white hover:bg-white/10"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
             </div>
-            <div className="flex flex-col gap-2 items-end">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="px-3 py-1 text-sm font-medium bg-white/10 text-white border-white/20">
-                  <CreditCard className="h-4 w-4 mr-1" />
-                  {credits} Credits
-                </Badge>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navigate("/buy-credits")}
-                  className="bg-white/10 text-white border-white/20 hover:bg-white/20"
-                >
-                  <CreditCard className="h-4 w-4 mr-1" />
-                  Buy Credits
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    console.log("Dark mode toggle clicked, current theme:", theme);
-                    const newTheme = theme === "dark" ? "light" : "dark";
-                    console.log("Switching to theme:", newTheme);
-                    setTheme(newTheme);
-                  }}
-                  className="text-white hover:bg-white/10"
-                >
-                  {theme === "dark" ? (
-                    <Sun className="h-4 w-4" />
-                  ) : (
-                    <Moon className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium bg-white/10 text-white border-white/20">
+                <CreditCard className="h-4 w-4 mr-1" />
+                {credits} Credits
+              </Badge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/buy-credits")}
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+              >
+                <CreditCard className="h-4 w-4 mr-1" />
+                Buy Credits
+              </Button>
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/10">
                 Sign Out
               </Button>
