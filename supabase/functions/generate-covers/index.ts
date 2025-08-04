@@ -89,7 +89,8 @@ serve(async (req) => {
     
     // Create detailed prompt for book cover
     const titleText = bookSubtitle ? `"${title}: ${bookSubtitle}"` : `"${title}"`;
-    const basePrompt = `Professional book cover design for ${titleText} by ${author}. ${genre} genre, ${style} style. ${description}. High quality, publishable book cover with title and author text, professional typography, book cover layout, 2:3 aspect ratio`;
+    const subtitleInstruction = bookSubtitle ? ` The title should be displayed prominently at the top with "${title}" as the main title and "${bookSubtitle}" as a subtitle below it, both clearly visible and readable.` : ` The title "${title}" should be prominently displayed and clearly readable.`;
+    const basePrompt = `Professional book cover design for ${titleText} by ${author}. ${genre} genre, ${style} style. ${description}.${subtitleInstruction} Author name "${author}" clearly visible. High quality, publishable book cover with crisp, legible typography, book cover layout, 2:3 aspect ratio`;
     
     console.log(`Generating 4 covers with base prompt: ${basePrompt}`);
 
