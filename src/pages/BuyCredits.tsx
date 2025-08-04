@@ -98,6 +98,9 @@ const BuyCredits = () => {
                   <Moon className="h-4 w-4" />
                 )}
               </Button>
+              <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/10">
+                Sign Out
+              </Button>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap mt-4">
@@ -132,17 +135,6 @@ const BuyCredits = () => {
               className="sm:hidden bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               Covers
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate("/verify-payment")}
-              className="text-white hover:bg-white/10"
-            >
-              Verify
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/10">
-              Sign Out
             </Button>
           </div>
         </div>
