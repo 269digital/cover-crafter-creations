@@ -98,19 +98,21 @@ serve(async (req) => {
     // Start remix process
     console.log('Starting remix with Ideogram...');
     
-    const remixResponse = await fetch('https://api.ideogram.ai/images/remix/v3', {
+    const remixResponse = await fetch('https://api.ideogram.ai/remix', {
       method: 'POST',
       headers: {
         'Api-Key': ideogramApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        image_id: imageId,
-        prompt: combinedPrompt,
-        remix_strength: 0.4, // Balanced remix strength
-        aspect_ratio: "ASPECT_2_3",
-        model: "V_2",
-        magic_prompt_option: "AUTO"
+        image_request: {
+          image_id: imageId,
+          prompt: combinedPrompt,
+          remix_strength: 0.4,
+          aspect_ratio: "ASPECT_2_3",
+          model: "V_2",
+          magic_prompt_option: "AUTO"
+        }
       })
     });
 
