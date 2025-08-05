@@ -155,11 +155,9 @@ serve(async (req) => {
         prompt += `Tagline: "${tagline}". `;
       }
       
-      prompt += `Create an eye-catching, professional book cover with ONLY the book title "${title}" and author name "${author}" displayed as text. `;
-      prompt += `Do not include any other text, quotes, descriptions, or additional words on the cover. `;
+      prompt += `Create an eye-catching, professional book cover with the title and author name prominently displayed. `;
       prompt += `High-quality, commercial book cover design, clean typography, professional layout, `;
-      prompt += `suitable for ${genre} genre with ${style} aesthetic. `;
-      prompt += `Text should be limited to: title "${title}" and author "${author}" only.`;
+      prompt += `suitable for ${genre} genre with ${style} aesthetic.`;
       
       return prompt;
     };
