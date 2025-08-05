@@ -111,7 +111,8 @@ serve(async (req) => {
           prompt: prompt,
           aspect_ratio: "ASPECT_10_16", // Book cover aspect ratio
           model: "V_2",
-          magic_prompt_option: "AUTO"
+          magic_prompt_option: "AUTO",
+          num_images: 4 // Generate 4 covers
         }
       }),
     });
