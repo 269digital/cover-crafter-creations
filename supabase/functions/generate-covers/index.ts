@@ -50,8 +50,11 @@ serve(async (req) => {
       });
     }
 
-    console.log("Step 3: Creating Supabase client");
+    console.log("Step 3: Creating Supabase clients");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Create a separate client for auth verification using anon key
+    const supabaseAnon = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!);
 
     console.log("Step 4: Getting authorization header");
     // Get authorization header
@@ -66,14 +69,21 @@ serve(async (req) => {
     console.log("Generating covers for:", { title, author, genre, style });
 
     console.log("Step 6: Getting user from JWT");
-    // Get user from JWT token
+    // Verify JWT and get user using anon client
     const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
     
-    if (userError || !user) {
-      console.error("User error:", userError);
+    // Set the session for the anon client
+    const { data: authData, error: authError } = await supabaseAnon.auth.setSession({
+      access_token: jwt,
+      refresh_token: '' // We don't need refresh for this verification
+    });
+    
+    if (authError || !authData.user) {
+      console.error("Auth error:", authError);
       throw new Error('Invalid authentication');
     }
+    
+    const user = authData.user;
     console.log("User authenticated:", user.id);
 
     console.log("Step 7: Checking user credits");
