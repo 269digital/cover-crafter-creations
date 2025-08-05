@@ -50,13 +50,20 @@ serve(async (req) => {
       });
     }
 
-    console.log("Step 3: Creating Supabase client");
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
+    console.log("Step 3: Creating Supabase clients");
+    // Use anon key for auth verification
+    const supabaseAuth = createClient(
+      supabaseUrl, 
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { 
+        global: { 
+          headers: { Authorization: req.headers.get('Authorization')! } 
+        } 
       }
-    });
+    );
+    
+    // Use service key for privileged operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log("Step 4: Getting authorization header");
     // Get authorization header
@@ -70,34 +77,20 @@ serve(async (req) => {
     const { title, author, genre, style, description, tagline } = await req.json();
     console.log("Generating covers for:", { title, author, genre, style });
 
-    console.log("Step 6: Verifying JWT token");
-    // Verify JWT token manually
-    const jwt = authHeader.replace('Bearer ', '');
+    console.log("Step 6: Verifying user authentication");
+    // Get authenticated user using anon client with JWT
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     
-    // Decode JWT to get user ID (simple base64 decode of payload)
-    try {
-      const parts = jwt.split('.');
-      if (parts.length !== 3) {
-        throw new Error('Invalid JWT format');
-      }
-      
-      const payload = JSON.parse(atob(parts[1]));
-      const userId = payload.sub;
-      
-      if (!userId) {
-        throw new Error('No user ID in token');
-      }
-      
-      console.log("User authenticated via JWT:", userId);
-      const user = { id: userId, email: payload.email };
-    } catch (jwtError) {
-      console.error("JWT decode error:", jwtError);
-      throw new Error('Invalid JWT token');
+    if (userError || !user) {
+      console.error("User error:", userError);
+      throw new Error('Invalid authentication');
     }
+    
+    console.log("User authenticated:", user.id);
 
     console.log("Step 7: Checking user credits");
-    // Check user credits
-    const { data: profile, error: profileError } = await supabase
+    // Check user credits using admin client
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('credits')
       .eq('user_id', user.id)
@@ -114,7 +107,7 @@ serve(async (req) => {
 
     if (!userProfile) {
       console.log("No profile found, creating one...");
-      const { data: newProfile, error: createError } = await supabase
+      const { data: newProfile, error: createError } = await supabaseAdmin
         .from('profiles')
         .upsert({
           user_id: user.id,
@@ -209,7 +202,7 @@ serve(async (req) => {
     }));
 
     // Deduct credits only after successful generation
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({ credits: userProfile.credits - 2 })
       .eq('user_id', user.id);
