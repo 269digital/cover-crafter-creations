@@ -170,7 +170,7 @@ serve(async (req) => {
       image_request: {
         prompt: prompt,
         num_images: 4,
-        aspect_ratio: 'PORTRAIT_2_3'
+        aspect_ratio: 'ASPECT_2_3'
       }
     };
 
