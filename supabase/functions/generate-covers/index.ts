@@ -91,31 +91,31 @@ serve(async (req) => {
     const aspectRatio = coverType === 'eBook Cover' ? 'ASPECT_2_3' : 'ASPECT_1_1';
     const aspectRatioText = coverType === 'eBook Cover' ? '2:3 aspect ratio' : '1:1 square aspect ratio';
     
-    // Create text requirements based on cover type
+    // Create text requirements based on cover type with explicit positioning
     let textRequirements = '';
     if (coverType === 'Album Cover') {
-      textRequirements = `REQUIRED TEXT: Album title "${title}" prominently at the top, artist name "${author}" clearly displayed below the title`;
+      textRequirements = `CRITICAL: Text must fit completely within image borders. Album title "${title}" positioned in upper area with sufficient margin from edges. Artist name "${author}" positioned below title with clear spacing. NO TEXT CUTOFF.`;
     } else if (coverType === 'Audiobook Cover') {
-      const narratorText = taglineNarrator ? `, narrated by "${taglineNarrator}"` : '';
-      textRequirements = `REQUIRED TEXT: Title "${title}" prominently at the top, author "${author}" clearly displayed${narratorText}, audiobook cover design`;
+      const narratorText = taglineNarrator ? ` and "Narrated by ${taglineNarrator}"` : '';
+      textRequirements = `CRITICAL: All text must be fully visible within image boundaries. Title "${title}" centered in upper portion with wide margins. Author "${author}"${narratorText} positioned below with adequate spacing from all edges. NO TEXT TRUNCATION.`;
     } else { // eBook Cover
-      const taglineText = taglineNarrator ? `, tagline "${taglineNarrator}"` : '';
-      textRequirements = `REQUIRED TEXT: Book title "${title}" prominently at the top, author name "${author}" clearly displayed${taglineText}`;
+      const taglineText = taglineNarrator ? ` and tagline "${taglineNarrator}"` : '';
+      textRequirements = `CRITICAL: Complete text visibility required. Book title "${title}" prominently placed in upper area with generous margins from edges. Author name "${author}"${taglineText} positioned below title with sufficient border clearance. ALL TEXT MUST BE COMPLETE AND UNCUT.`;
     }
     
-    // Create detailed prompt for cover
-    const basePrompt = `Professional ${coverType.toLowerCase()} design. ${textRequirements}. ${genre} genre, ${style} style. Visual elements: ${description}. High quality, publishable cover with clear, readable typography, professional layout, ${aspectRatioText}. All text must be clearly visible and not cut off.`;
+    // Create detailed prompt for cover with explicit text safety instructions
+    const basePrompt = `Professional ${coverType.toLowerCase()} design with MANDATORY text safety rules: ${textRequirements} Visual theme: ${description}. Genre: ${genre}, Style: ${style}. Image format: ${aspectRatioText}. Typography must be sized appropriately to fit completely within frame. Leave adequate white space around all text elements. Text positioning must account for full character width and height.`;
     
     console.log(`Generating 4 covers with base prompt: ${basePrompt}`);
 
     try {
-      // Generate 4 different covers with variations that emphasize text clarity
+      // Generate 4 different covers with variations that prioritize complete text visibility
       const coverPromises = [];
       const variations = [
-        basePrompt + ", clean professional design with bold typography",
-        basePrompt + ", modern elegant design with clear readable text",
-        basePrompt + ", sophisticated layout with prominent title placement", 
-        basePrompt + ", eye-catching design with well-positioned text elements"
+        basePrompt + " Clean design with centered text layout and wide margins ensuring no text cutoff.",
+        basePrompt + " Modern layout with carefully positioned text elements that fit completely within image bounds.",
+        basePrompt + " Professional design with text sized appropriately to prevent any truncation or edge cutting.",
+        basePrompt + " Elegant composition with generous spacing around all text to ensure full visibility."
       ];
 
       for (let i = 0; i < 4; i++) {
