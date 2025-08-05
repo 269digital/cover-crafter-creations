@@ -91,6 +91,7 @@ serve(async (req) => {
     
     // Determine aspect ratio and text requirements based on cover type
     const aspectRatio = coverType === 'eBook Cover' ? 'ASPECT_2_3' : 'ASPECT_1_1';
+    console.log(`Cover type: ${coverType}, Setting aspect ratio to: ${aspectRatio}`);
     const aspectRatioText = coverType === 'eBook Cover' ? '2:3 aspect ratio' : '1:1 square aspect ratio';
     
     // Create text requirements based on cover type with explicit positioning
@@ -138,6 +139,7 @@ serve(async (req) => {
             }
           })
         });
+        console.log(`API request ${i + 1} with aspect ratio: ${aspectRatio}, prompt preview: ${variations[i].substring(0, 100)}...`);
         coverPromises.push(promise);
       }
 
