@@ -24,7 +24,6 @@ const Studio = () => {
   const [style, setStyle] = useState("");
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
-  const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
@@ -88,7 +87,7 @@ const Studio = () => {
           genre,
           style,
           description,
-          tagline
+          tagline: ""
         }
       });
 
@@ -415,17 +414,6 @@ const Studio = () => {
                   placeholder="Enter author name"
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
-                />
-              </div>
-
-              {/* Tagline Field */}
-              <div className="space-y-2">
-                <Label htmlFor="tagline">Tagline (Optional)</Label>
-                <Input
-                  id="tagline"
-                  placeholder="Enter tagline (optional)"
-                  value={tagline}
-                  onChange={(e) => setTagline(e.target.value)}
                 />
               </div>
 
