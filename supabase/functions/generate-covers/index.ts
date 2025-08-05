@@ -20,6 +20,7 @@ serve(async (req) => {
 
   try {
     console.log('=== INITIALIZATION START ===');
+    
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -32,22 +33,18 @@ serve(async (req) => {
     });
 
     if (!supabaseUrl || !supabaseServiceKey || !supabaseAnon) {
-      console.error('Missing environment variables:', {
-        supabaseUrl: !!supabaseUrl,
-        supabaseServiceKey: !!supabaseServiceKey,
-        supabaseAnon: !!supabaseAnon
-      });
+      console.error('Missing environment variables');
       throw new Error('Missing required environment variables');
     }
 
     console.log('Creating Supabase client...');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    console.log('Supabase client created successfully');
 
+    console.log('=== AUTHENTICATION START ===');
+    
     // Get the authorization header and extract user
     const authHeader = req.headers.get('authorization');
     console.log('Auth header present:', !!authHeader);
-    console.log('Full auth header:', authHeader);
     
     if (!authHeader) {
       console.error('No authorization header provided');
@@ -57,81 +54,53 @@ serve(async (req) => {
     // Extract the JWT token from the authorization header
     const token = authHeader.replace('Bearer ', '');
     console.log('Token extracted:', !!token);
-    console.log('Token preview:', token.substring(0, 50) + '...');
 
-    let userId: string;
-    
-    try {
-      // Create a client with the user's JWT token for authentication
-      const authenticatedSupabase = createClient(supabaseUrl, supabaseAnon, {
-        global: {
-          headers: {
-            authorization: authHeader
-          }
+    // Create a client with the user's JWT token for authentication
+    const authenticatedSupabase = createClient(supabaseUrl, supabaseAnon, {
+      global: {
+        headers: {
+          authorization: authHeader
         }
-      });
-
-      // Verify the user is authenticated using the authenticated client
-      const { data: userData, error: authError } = await authenticatedSupabase.auth.getUser();
-      
-      if (authError) {
-        console.error('Auth error:', authError);
-        console.error('Auth header was:', authHeader);
-        throw new Error(`Authentication failed: ${authError.message}`);
       }
-      
-      if (!userData?.user) {
-        console.error('No user data returned from auth check');
-        throw new Error('No user found in authentication data');
-      }
+    });
 
-      userId = userData.user.id;
-      console.log(`Authenticated user: ${userId}`);
-    } catch (error) {
-      console.error('Authentication error:', error);
-      throw new Error(`User authentication failed: ${error.message}`);
+    // Verify the user is authenticated using the authenticated client
+    const { data: userData, error: authError } = await authenticatedSupabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Auth error:', authError.message);
+      throw new Error(`Authentication failed: ${authError.message}`);
+    }
+    
+    if (!userData?.user) {
+      console.error('No user data returned from auth check');
+      throw new Error('No user found in authentication data');
     }
 
+    const userId = userData.user.id;
+    console.log(`✅ Authenticated user: ${userId}`);
+
     console.log('=== REQUEST BODY PARSING ===');
+    
     // Get request body
     const { title, author, genre, style, description, tagline } = await req.json();
     console.log(`✅ Request from user ${userId} for: ${title} by ${author}`);
-    console.log(`Full request body:`, JSON.stringify({ title, author, genre, style, description, tagline }));
 
-    // Credit check temporarily disabled for testing
-    // Get user profile and check credits - using maybeSingle to avoid errors
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('credits')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error('Profile error:', profileError);
-      // Don't throw error for testing mode
-      console.log('Profile check disabled for testing');
-    }
-
-    if (!profile) {
-      console.error('No profile found for user:', userId);
-      // Don't throw error for testing mode
-      console.log('Profile check disabled for testing');
-    }
-
-    console.log(`Credit check disabled - testing mode enabled`);
-
+    console.log('=== API KEY CHECK ===');
+    
     // Get Ideogram API key
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY');
     if (!ideogramApiKey) {
+      console.error('Ideogram API key not found');
       throw new Error('Ideogram API key not configured. Please add IDEOGRAM_API_KEY to your Supabase secrets.');
     }
+    
+    console.log('✅ Ideogram API key found');
 
-    // Generate AI images using Ideogram FIRST, then deduct credit
-    console.log('Generating 4 book covers with Ideogram...');
+    console.log('=== GENERATING COVERS ===');
     
     // Use 2:3 aspect ratio for book covers
     const aspectRatio = 'ASPECT_2_3';
-    console.log(`Setting aspect ratio to: ${aspectRatio}`);
     
     // Create text requirements for book covers with explicit positioning
     const taglineText = tagline ? ` and tagline "${tagline}"` : '';
@@ -140,118 +109,112 @@ serve(async (req) => {
     // Create detailed prompt for book cover with explicit text safety instructions
     const basePrompt = `Professional book cover design with MANDATORY text safety rules: ${textRequirements} Visual theme: ${description}. Genre: ${genre}, Style: ${style}. Image format: 2:3 aspect ratio. Typography must be sized appropriately to fit completely within frame. Leave adequate white space around all text elements. Text positioning must account for full character width and height.`;
     
-    console.log(`Generating 4 covers with base prompt: ${basePrompt}`);
+    console.log(`Generating 4 covers with base prompt: ${basePrompt.substring(0, 100)}...`);
 
-    try {
-      // Generate 4 different covers with variations that prioritize complete text visibility
-      const coverPromises = [];
-      const variations = [
-        basePrompt + " Clean design with centered text layout and wide margins ensuring no text cutoff.",
-        basePrompt + " Modern layout with carefully positioned text elements that fit completely within image bounds.",
-        basePrompt + " Professional design with text sized appropriately to prevent any truncation or edge cutting.",
-        basePrompt + " Elegant composition with generous spacing around all text to ensure full visibility."
-      ];
+    // Generate 4 different covers with variations that prioritize complete text visibility
+    const coverPromises = [];
+    const variations = [
+      basePrompt + " Clean design with centered text layout and wide margins ensuring no text cutoff.",
+      basePrompt + " Modern layout with carefully positioned text elements that fit completely within image bounds.",
+      basePrompt + " Professional design with text sized appropriately to prevent any truncation or edge cutting.",
+      basePrompt + " Elegant composition with generous spacing around all text to ensure full visibility."
+    ];
 
-      for (let i = 0; i < 4; i++) {
-        const promise = fetch('https://api.ideogram.ai/generate', {
-          method: 'POST',
-          headers: {
-            'Api-Key': ideogramApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            image_request: {
-              prompt: variations[i],
-              aspect_ratio: aspectRatio,
-              model: "V_2",
-              magic_prompt_option: "AUTO",
-              seed: Math.floor(Math.random() * 1000000),
-              style_type: "AUTO"
-            }
-          })
-        });
-        console.log(`API request ${i + 1} with aspect ratio: ${aspectRatio}, prompt preview: ${variations[i].substring(0, 100)}...`);
-        coverPromises.push(promise);
-      }
-
-      console.log('Making 4 parallel requests to Ideogram...');
-      const responses = await Promise.all(coverPromises);
-      
-      const generatedImages = [];
-      const generationIds = [];
-      for (let i = 0; i < responses.length; i++) {
-        const response = responses[i];
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Ideogram API error for cover ${i + 1}:`, response.status, errorText);
-          continue; // Skip this one but continue with others
-        }
-
-        const result = await response.json();
-        console.log(`Ideogram generation result for cover ${i + 1}:`, result);
-        console.log(`Full response structure:`, JSON.stringify(result, null, 2));
-        
-        if (result.data && result.data.length > 0) {
-          generatedImages.push(result.data[0].url);
-          // Extract image ID from the URL since Ideogram doesn't provide generation_id in response
-          const imageUrl = result.data[0].url;
-          const imageIdMatch = imageUrl.match(/\/ephemeral\/([a-zA-Z0-9_-]+)\./);
-          const imageId = imageIdMatch ? imageIdMatch[1] : null;
-          console.log(`Extracted image ID for cover ${i + 1}:`, imageId);
-          generationIds.push(imageId || `fallback_${Date.now()}_${i}`);
-        }
-      }
-
-      if (generatedImages.length === 0) {
-        throw new Error('No images generated by Ideogram');
-      }
-
-      console.log(`Generated ${generatedImages.length} images:`, generatedImages);
-
-      // Save the creation to the database for "My Covers" feature
-      const fullPrompt = `${title} by ${author} - ${genre} genre, ${style} style. ${description}`;
-      
-      const { error: insertError } = await supabase
-        .from('creations')
-        .insert({
-          user_id: userId,
-          prompt: fullPrompt,
-          cover_type: 'eBook Cover',
-          image_url1: generatedImages[0] || null,
-          image_url2: generatedImages[1] || null,
-          image_url3: generatedImages[2] || null,
-          image_url4: generatedImages[3] || null,
-          ideogram_id: generationIds[0] || null, // Store the first generation ID for remix
-        });
-
-      if (insertError) {
-        console.error('Error saving creation to database:', insertError);
-        // Don't throw error - still return the generated images
-      } else {
-        console.log('Successfully saved creation to database');
-      }
-
-      // Credit deduction temporarily disabled for testing
-      console.log(`Credit deduction disabled - testing mode`);
-
-      return new Response(JSON.stringify({
-        success: true,
-        message: `Generated ${generatedImages.length} book covers for "${title}" (Testing Mode)`,
-        images: generatedImages,
-        generationIds: generationIds,
-        creditsRemaining: 999
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+    for (let i = 0; i < 4; i++) {
+      const promise = fetch('https://api.ideogram.ai/generate', {
+        method: 'POST',
+        headers: {
+          'Api-Key': ideogramApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_request: {
+            prompt: variations[i],
+            aspect_ratio: aspectRatio,
+            model: "V_2",
+            magic_prompt_option: "AUTO",
+            seed: Math.floor(Math.random() * 1000000),
+            style_type: "AUTO"
+          }
+        })
       });
-
-    } catch (error) {
-      console.error('Error generating with Ideogram:', error);
-      throw new Error(`Failed to generate covers: ${error.message}`);
+      console.log(`API request ${i + 1} with aspect ratio: ${aspectRatio}`);
+      coverPromises.push(promise);
     }
 
+    console.log('Making 4 parallel requests to Ideogram...');
+    const responses = await Promise.all(coverPromises);
+    
+    const generatedImages = [];
+    const generationIds = [];
+    
+    for (let i = 0; i < responses.length; i++) {
+      const response = responses[i];
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Ideogram API error for cover ${i + 1}:`, response.status, errorText);
+        continue; // Skip this one but continue with others
+      }
+
+      const result = await response.json();
+      console.log(`Ideogram generation result for cover ${i + 1}:`, !!result.data);
+      
+      if (result.data && result.data.length > 0) {
+        generatedImages.push(result.data[0].url);
+        // Extract image ID from the URL since Ideogram doesn't provide generation_id in response
+        const imageUrl = result.data[0].url;
+        const imageIdMatch = imageUrl.match(/\/ephemeral\/([a-zA-Z0-9_-]+)\./);
+        const imageId = imageIdMatch ? imageIdMatch[1] : null;
+        generationIds.push(imageId || `fallback_${Date.now()}_${i}`);
+      }
+    }
+
+    if (generatedImages.length === 0) {
+      throw new Error('No images generated by Ideogram');
+    }
+
+    console.log(`✅ Generated ${generatedImages.length} images`);
+
+    // Save the creation to the database for "My Covers" feature
+    const fullPrompt = `${title} by ${author} - ${genre} genre, ${style} style. ${description}`;
+    
+    const { error: insertError } = await supabase
+      .from('creations')
+      .insert({
+        user_id: userId,
+        prompt: fullPrompt,
+        cover_type: 'eBook Cover',
+        image_url1: generatedImages[0] || null,
+        image_url2: generatedImages[1] || null,
+        image_url3: generatedImages[2] || null,
+        image_url4: generatedImages[3] || null,
+        ideogram_id: generationIds[0] || null, // Store the first generation ID for remix
+      });
+
+    if (insertError) {
+      console.error('Error saving creation to database:', insertError);
+      // Don't throw error - still return the generated images
+    } else {
+      console.log('✅ Successfully saved creation to database');
+    }
+
+    console.log(`✅ SUCCESS - Returning ${generatedImages.length} covers`);
+
+    return new Response(JSON.stringify({
+      success: true,
+      message: `Generated ${generatedImages.length} book covers for "${title}" (Testing Mode)`,
+      images: generatedImages,
+      generationIds: generationIds,
+      creditsRemaining: 999
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
+
   } catch (error) {
-    console.error("Cover generation error:", error);
+    console.error("❌ Cover generation error:", error.message);
+    console.error("❌ Error stack:", error.stack);
+    
     return new Response(JSON.stringify({ 
       error: error.message,
       details: error.stack 
