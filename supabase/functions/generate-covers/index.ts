@@ -51,14 +51,21 @@ serve(async (req) => {
     }
 
     console.log("Step 3: Creating Supabase client");
-    // Use service key for all operations
+    // Use service key for all operations since JWT verification is disabled
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log("Step 4: Getting authorization header");
-    // Get authorization header
+    // Get authorization header for manual validation
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('No valid authorization header');
+      console.error("Missing or invalid authorization header");
+      return new Response(JSON.stringify({
+        error: 'Authentication required',
+        message: 'Please sign in to generate covers'
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
 
     console.log("Step 5: Parsing request body");
@@ -66,24 +73,36 @@ serve(async (req) => {
     const { title, author, genre, style, description, tagline } = await req.json();
     console.log("Generating covers for:", { title, author, genre, style });
 
-    console.log("Step 6: Verifying user authentication");
+    console.log("Step 6: Manually verifying JWT token");
     console.log("Authorization header present:", !!authHeader);
     console.log("Auth header starts with Bearer:", authHeader?.startsWith('Bearer '));
     
     // Extract JWT token
     const token = authHeader.replace('Bearer ', '');
+    console.log("Token extracted, length:", token.length);
     
-    // Verify JWT token using service role client
+    // Manually verify JWT token using service role client
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
-    console.log("Auth getUser result:", { user: user?.id, error: userError?.message });
+    console.log("Manual JWT verification result:", { 
+      userId: user?.id, 
+      userEmail: user?.email,
+      error: userError?.message 
+    });
     
     if (userError || !user) {
-      console.error("User error:", userError);
-      throw new Error('Invalid authentication');
+      console.error("JWT verification failed:", userError);
+      return new Response(JSON.stringify({
+        error: 'Invalid authentication',
+        message: 'Please sign in again',
+        details: userError?.message
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
     
-    console.log("User authenticated:", user.id);
+    console.log("User authenticated successfully:", user.id, user.email);
 
     console.log("Step 7: Checking user credits");
     // Check user credits using service role client
