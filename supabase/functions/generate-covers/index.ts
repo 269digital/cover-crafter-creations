@@ -86,7 +86,7 @@ serve(async (req) => {
     }
 
     console.log("Step 5: Parsing request body");
-    const { title, author, genre, style, description } = await req.json();
+    const { title, author, genre, style, description, tagline } = await req.json();
     
     console.log("Generating covers for user:", userId, "- Book:", { title, author, genre, style });
 
@@ -142,13 +142,17 @@ serve(async (req) => {
 
     // Build dynamic prompt for book cover
     const buildPrompt = (bookData: any) => {
-      const { title, author, genre, style, description } = bookData;
+      const { title, author, genre, style, description, tagline } = bookData;
       
       let prompt = `Professional book cover design for "${title}" by ${author}. `;
       prompt += `Genre: ${genre}. Style: ${style}. `;
       
       if (description) {
         prompt += `Book description: ${description}. `;
+      }
+      
+      if (tagline) {
+        prompt += `Tagline: "${tagline}". `;
       }
       
       prompt += `Create an eye-catching, professional book cover with ONLY the book title "${title}" and author name "${author}" displayed as text. `;
@@ -160,7 +164,7 @@ serve(async (req) => {
       return prompt;
     };
 
-    const prompt = buildPrompt({ title, author, genre, style, description });
+    const prompt = buildPrompt({ title, author, genre, style, description, tagline });
     console.log("Generated prompt:", prompt);
 
     // Call Ideogram API
