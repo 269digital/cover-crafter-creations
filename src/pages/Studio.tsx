@@ -66,10 +66,16 @@ const Studio = () => {
     //   return;
     // }
 
-    if (!genre || !style || !title || !authorArtist || !description) {
+    // Validate required fields based on cover type
+    const baseFieldsValid = genre && style && title && authorArtist && description;
+    const narratorRequired = coverType === "Audiobook Cover" && !taglineNarrator;
+    
+    if (!baseFieldsValid || narratorRequired) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all fields before generating covers.",
+        description: narratorRequired 
+          ? "Please enter the narrator name for audiobook covers."
+          : "Please fill in all fields before generating covers.",
         variant: "destructive",
       });
       return;

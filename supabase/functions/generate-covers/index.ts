@@ -54,7 +54,9 @@ serve(async (req) => {
 
     // Get request body
     const { title, author, genre, style, description, coverType, taglineNarrator } = await req.json();
-    console.log(`Request from user ${userId} for: ${title} by ${author}, Cover Type: ${coverType}, Extra: ${taglineNarrator}`);
+    console.log(`Request from user ${userId} for: ${title} by ${author}, Cover Type: ${coverType}`);
+    console.log(`TaglineNarrator received:`, taglineNarrator);
+    console.log(`Full request body:`, JSON.stringify({ title, author, genre, style, description, coverType, taglineNarrator }));
 
     // Credit check temporarily disabled for testing
     // Get user profile and check credits - using maybeSingle to avoid errors
