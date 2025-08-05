@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [credits, setCredits] = useState(0);
 
-  const refreshCredits = async () => {
+  const refreshCredits = useCallback(async () => {
     if (!user) {
       console.log('No user found for credit refresh');
       return;
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error refreshing credits:", error);
       setCredits(0);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     console.log('Auth provider initializing...');
@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user && !loading) {
       refreshCredits();
     }
-  }, [user, loading]);
+  }, [user, loading, refreshCredits]);
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/`;
