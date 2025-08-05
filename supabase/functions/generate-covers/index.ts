@@ -9,6 +9,8 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log("=== GENERATE COVERS FUNCTION START ===");
+  console.log("Method:", req.method);
+  console.log("URL:", req.url);
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -21,7 +23,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY');
-    const testMode = Deno.env.get('TEST_MODE') === 'true' || !ideogramApiKey;
+    const testMode = true; // Force test mode for now
     
     console.log("Test mode:", testMode);
     
