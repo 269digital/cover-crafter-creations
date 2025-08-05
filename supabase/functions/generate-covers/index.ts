@@ -33,6 +33,8 @@ serve(async (req) => {
     // Get the authorization header and extract user
     const authHeader = req.headers.get('authorization');
     console.log('Auth header present:', !!authHeader);
+    console.log('Full auth header:', authHeader);
+    
     if (!authHeader) {
       throw new Error('No authorization header provided');
     }
@@ -40,9 +42,19 @@ serve(async (req) => {
     // Extract the JWT token from the authorization header
     const token = authHeader.replace('Bearer ', '');
     console.log('Token extracted:', !!token);
+    console.log('Token preview:', token.substring(0, 50) + '...');
 
-    // Use service role client to validate the JWT token
-    const { data: userData, error: authError } = await supabase.auth.getUser(token);
+    // Create a client with the user's JWT token for authentication
+    const authenticatedSupabase = createClient(supabaseUrl, supabaseAnon, {
+      global: {
+        headers: {
+          authorization: authHeader
+        }
+      }
+    });
+
+    // Verify the user is authenticated using the authenticated client
+    const { data: userData, error: authError } = await authenticatedSupabase.auth.getUser();
     if (authError || !userData.user) {
       console.error('Auth error:', authError);
       console.error('Auth header was:', authHeader);
