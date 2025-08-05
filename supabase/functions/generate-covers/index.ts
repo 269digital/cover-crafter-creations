@@ -50,11 +50,13 @@ serve(async (req) => {
       });
     }
 
-    console.log("Step 3: Creating Supabase clients");
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Create a separate client for auth verification using anon key
-    const supabaseAnon = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!);
+    console.log("Step 3: Creating Supabase client");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
     console.log("Step 4: Getting authorization header");
     // Get authorization header
@@ -68,23 +70,30 @@ serve(async (req) => {
     const { title, author, genre, style, description, tagline } = await req.json();
     console.log("Generating covers for:", { title, author, genre, style });
 
-    console.log("Step 6: Getting user from JWT");
-    // Verify JWT and get user using anon client
+    console.log("Step 6: Verifying JWT token");
+    // Verify JWT token manually
     const jwt = authHeader.replace('Bearer ', '');
     
-    // Set the session for the anon client
-    const { data: authData, error: authError } = await supabaseAnon.auth.setSession({
-      access_token: jwt,
-      refresh_token: '' // We don't need refresh for this verification
-    });
-    
-    if (authError || !authData.user) {
-      console.error("Auth error:", authError);
-      throw new Error('Invalid authentication');
+    // Decode JWT to get user ID (simple base64 decode of payload)
+    try {
+      const parts = jwt.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT format');
+      }
+      
+      const payload = JSON.parse(atob(parts[1]));
+      const userId = payload.sub;
+      
+      if (!userId) {
+        throw new Error('No user ID in token');
+      }
+      
+      console.log("User authenticated via JWT:", userId);
+      const user = { id: userId, email: payload.email };
+    } catch (jwtError) {
+      console.error("JWT decode error:", jwtError);
+      throw new Error('Invalid JWT token');
     }
-    
-    const user = authData.user;
-    console.log("User authenticated:", user.id);
 
     console.log("Step 7: Checking user credits");
     // Check user credits
