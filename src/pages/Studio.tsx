@@ -97,9 +97,11 @@ const Studio = () => {
       }
 
       if (data?.success) {
-        setGeneratedImages(data.images || []);
+        // Extract URLs from Ideogram response objects
+        const imageUrls = (data.images || []).map((img: any) => img.url);
+        setGeneratedImages(imageUrls);
         // Initialize image data with generation IDs if available
-        const newImageData = (data.images || []).map((url: string, index: number) => ({
+        const newImageData = imageUrls.map((url: string, index: number) => ({
           url,
           generationId: data.generationIds?.[index],
           isUpscaled: false,
