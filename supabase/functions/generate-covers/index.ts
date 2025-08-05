@@ -93,17 +93,21 @@ serve(async (req) => {
     console.log("Generated prompt:", prompt);
 
     // Call Ideogram API
-    const formData = new FormData();
-    formData.append('prompt', prompt);
-    formData.append('num_images', '4');
-    formData.append('aspect_ratio', 'PORTRAIT_2_3');
+    const requestBody = {
+      image_request: {
+        prompt: prompt,
+        num_images: 4,
+        aspect_ratio: 'PORTRAIT_2_3'
+      }
+    };
 
-    const ideogramResponse = await fetch('https://api.ideogram.ai/generate/v3', {
+    const ideogramResponse = await fetch('https://api.ideogram.ai/generate', {
       method: 'POST',
       headers: {
         'Api-Key': ideogramApiKey,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify(requestBody),
     });
 
     if (!ideogramResponse.ok) {
