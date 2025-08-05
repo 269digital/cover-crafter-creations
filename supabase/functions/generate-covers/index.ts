@@ -18,13 +18,13 @@ serve(async (req) => {
   try {
     console.log("Method:", req.method);
     
-    // Test environment variables
-    const ideogramKey = Deno.env.get('IDEOGRAM_API_KEY');
-    console.log("Ideogram Key exists:", !!ideogramKey);
+    // Test environment variables (commented out for testing)
+    // const ideogramKey = Deno.env.get('IDEOGRAM_API_KEY');
+    // console.log("Ideogram Key exists:", !!ideogramKey);
     
-    if (!ideogramKey) {
-      throw new Error("IDEOGRAM_API_KEY not found in environment");
-    }
+    // if (!ideogramKey) {
+    //   throw new Error("IDEOGRAM_API_KEY not found in environment");
+    // }
     
     // Parse request body
     const body = await req.json();
