@@ -23,9 +23,12 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY');
-    const testMode = true; // Force test mode for now
+    const testMode = Deno.env.get('TEST_MODE') === 'true';
     
-    console.log("Test mode:", testMode);
+    console.log("Step 2: Checking API key");
+    if (!ideogramApiKey && !testMode) {
+      throw new Error('IDEOGRAM_API_KEY not configured');
+    }
     
     if (testMode) {
       console.log("Running in TEST MODE - returning mock data");
@@ -79,13 +82,34 @@ serve(async (req) => {
       .from('profiles')
       .select('credits')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     console.log("Profile query result:", { profile, profileError });
 
-    if (profileError || !profile) {
+    if (profileError) {
       console.error("Profile error details:", profileError);
-      throw new Error(`Could not fetch user profile: ${profileError?.message || 'No profile found'}`);
+      throw new Error(`Database error: ${profileError.message}`);
+    }
+
+    if (!profile) {
+      console.log("No profile found, creating one...");
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          credits: 10 // Give new users 10 credits to start
+        })
+        .select('credits')
+        .single();
+
+      if (createError) {
+        console.error("Error creating profile:", createError);
+        throw new Error(`Could not create user profile: ${createError.message}`);
+      }
+
+      profile = newProfile;
+      console.log("Created new profile with credits:", newProfile.credits);
     }
 
     if (profile.credits < 2) {
