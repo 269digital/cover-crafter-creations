@@ -36,6 +36,7 @@ serve(async (req) => {
     console.log('Full auth header:', authHeader);
     
     if (!authHeader) {
+      console.error('No authorization header provided');
       throw new Error('No authorization header provided');
     }
 
@@ -44,25 +45,38 @@ serve(async (req) => {
     console.log('Token extracted:', !!token);
     console.log('Token preview:', token.substring(0, 50) + '...');
 
-    // Create a client with the user's JWT token for authentication
-    const authenticatedSupabase = createClient(supabaseUrl, supabaseAnon, {
-      global: {
-        headers: {
-          authorization: authHeader
+    let userId: string;
+    
+    try {
+      // Create a client with the user's JWT token for authentication
+      const authenticatedSupabase = createClient(supabaseUrl, supabaseAnon, {
+        global: {
+          headers: {
+            authorization: authHeader
+          }
         }
+      });
+
+      // Verify the user is authenticated using the authenticated client
+      const { data: userData, error: authError } = await authenticatedSupabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Auth error:', authError);
+        console.error('Auth header was:', authHeader);
+        throw new Error(`Authentication failed: ${authError.message}`);
       }
-    });
+      
+      if (!userData?.user) {
+        console.error('No user data returned from auth check');
+        throw new Error('No user found in authentication data');
+      }
 
-    // Verify the user is authenticated using the authenticated client
-    const { data: userData, error: authError } = await authenticatedSupabase.auth.getUser();
-    if (authError || !userData.user) {
-      console.error('Auth error:', authError);
-      console.error('Auth header was:', authHeader);
-      throw new Error('User not authenticated');
+      userId = userData.user.id;
+      console.log(`Authenticated user: ${userId}`);
+    } catch (error) {
+      console.error('Authentication error:', error);
+      throw new Error(`User authentication failed: ${error.message}`);
     }
-
-    const userId = userData.user.id;
-    console.log(`Authenticated user: ${userId}`);
 
     // Get request body
     const { title, author, genre, style, description, tagline } = await req.json();

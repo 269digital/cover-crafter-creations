@@ -66,18 +66,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    console.log('Auth provider initializing...');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, 'Session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('User authenticated:', session.user.email);
           // Defer credit refresh to avoid blocking auth state
           setTimeout(() => {
             refreshCredits();
           }, 0);
         } else {
+          console.log('No user in session');
           setCredits(0);
         }
         
@@ -86,14 +91,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    console.log('Checking for existing session...');
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('Initial session check:', !!session, 'Error:', error);
+      if (error) {
+        console.error('Session check error:', error);
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        console.log('Found existing session for:', session.user.email);
         setTimeout(() => {
           refreshCredits();
         }, 0);
       }
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Error checking session:', error);
       setLoading(false);
     });
 
