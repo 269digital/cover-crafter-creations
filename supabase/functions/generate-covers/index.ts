@@ -17,34 +17,43 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Step 1: Getting environment variables");
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY');
     
+    console.log("Step 2: Checking API key");
     if (!ideogramApiKey) {
       throw new Error('IDEOGRAM_API_KEY not configured');
     }
 
+    console.log("Step 3: Creating Supabase client");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    console.log("Step 4: Getting authorization header");
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
+    console.log("Step 5: Parsing request body");
     // Parse request body
     const { title, author, genre, style, description, tagline } = await req.json();
     console.log("Generating covers for:", { title, author, genre, style });
 
+    console.log("Step 6: Getting user from JWT");
     // Get user from JWT token
     const jwt = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
     
     if (userError || !user) {
+      console.error("User error:", userError);
       throw new Error('Invalid authentication');
     }
+    console.log("User authenticated:", user.id);
 
+    console.log("Step 7: Checking user credits");
     // Check user credits
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -52,8 +61,11 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
+    console.log("Profile query result:", { profile, profileError });
+
     if (profileError || !profile) {
-      throw new Error('Could not fetch user profile');
+      console.error("Profile error details:", profileError);
+      throw new Error(`Could not fetch user profile: ${profileError?.message || 'No profile found'}`);
     }
 
     if (profile.credits < 2) {
