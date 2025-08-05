@@ -60,8 +60,6 @@ verify_jwt = true
 [functions.handle-payment-success]
 verify_jwt = true
 
-[functions.generate-covers]
-verify_jwt = false
 
 [functions.verify-payment]
 verify_jwt = true

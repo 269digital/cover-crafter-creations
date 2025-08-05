@@ -50,15 +50,16 @@ serve(async (req) => {
       });
     }
 
-    console.log("Step 3: Creating Supabase clients");
-    // Use service key for privileged operations
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    console.log("Step 3: Creating Supabase client for database operations");
+    // Use service key for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Step 4: Getting authorization header");
-    // Get authorization header for manual validation
+    console.log("Step 4: Getting JWT token from request");
+    // Supabase automatically validates JWT when verify_jwt = true
+    // Extract user info from the JWT token in Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error("Missing or invalid authorization header");
+      console.error("No valid authorization header found");
       return new Response(JSON.stringify({
         error: 'Authentication required',
         message: 'Please sign in to generate covers'
@@ -68,59 +69,33 @@ serve(async (req) => {
       });
     }
 
-    console.log("Step 5: Parsing request body");
-    // Parse request body
-    const { title, author, genre, style, description, tagline } = await req.json();
-    console.log("Generating covers for:", { title, author, genre, style });
-
-    console.log("Step 6: Manually verifying JWT token");
-    console.log("Authorization header present:", !!authHeader);
-    console.log("Auth header starts with Bearer:", authHeader?.startsWith('Bearer '));
-    
-    // Extract JWT token
+    // Parse JWT token to get user ID (Supabase has already validated it)
     const token = authHeader.replace('Bearer ', '');
-    console.log("Token extracted, length:", token.length);
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const userId = payload.sub;
     
-    // Create anon client with the JWT token for verification
-    const supabaseAuth = createClient(
-      supabaseUrl, 
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { 
-        global: { 
-          headers: { Authorization: authHeader } 
-        } 
-      }
-    );
-    
-    // Verify JWT token using anon client with Authorization header
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
-    
-    console.log("Manual JWT verification result:", { 
-      userId: user?.id, 
-      userEmail: user?.email,
-      error: userError?.message 
-    });
-    
-    if (userError || !user) {
-      console.error("JWT verification failed:", userError);
+    if (!userId) {
+      console.error("No user ID found in JWT token");
       return new Response(JSON.stringify({
-        error: 'Invalid authentication',
-        message: 'Please sign in again',
-        details: userError?.message
+        error: 'Invalid authentication token',
+        message: 'Please sign in again'
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
-    
-    console.log("User authenticated successfully:", user.id, user.email);
 
-    console.log("Step 7: Checking user credits");
-    // Check user credits using admin client
-    const { data: profile, error: profileError } = await supabaseAdmin
+    console.log("Step 5: Parsing request body");
+    const { title, author, genre, style, description, tagline } = await req.json();
+    
+    console.log("Generating covers for user:", userId, "- Book:", { title, author, genre, style });
+
+    console.log("Step 6: Checking user credits");
+    // Check user credits using service role client
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('credits')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle();
 
     console.log("Profile query result:", { profile, profileError });
@@ -134,11 +109,10 @@ serve(async (req) => {
 
     if (!userProfile) {
       console.log("No profile found, creating one...");
-      const { data: newProfile, error: createError } = await supabaseAdmin
+      const { data: newProfile, error: createError } = await supabase
         .from('profiles')
         .upsert({
-          user_id: user.id,
-          email: user.email || '',
+          user_id: userId,
           credits: 10 // Give new users 10 credits to start
         }, {
           onConflict: 'user_id'
@@ -229,10 +203,10 @@ serve(async (req) => {
     }));
 
     // Deduct credits only after successful generation
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabase
       .from('profiles')
       .update({ credits: userProfile.credits - 2 })
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (updateError) {
       console.error('Error updating credits:', updateError);
