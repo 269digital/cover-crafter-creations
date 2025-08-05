@@ -78,8 +78,13 @@ serve(async (req) => {
     console.log("Generating covers for:", { title, author, genre, style });
 
     console.log("Step 6: Verifying user authentication");
+    console.log("Authorization header present:", !!authHeader);
+    console.log("Auth header starts with Bearer:", authHeader?.startsWith('Bearer '));
+    
     // Get authenticated user using anon client with JWT
     const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    
+    console.log("Auth getUser result:", { user: user?.id, error: userError?.message });
     
     if (userError || !user) {
       console.error("User error:", userError);
