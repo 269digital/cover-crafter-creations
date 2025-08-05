@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log("=== GENERATE COVERS FUNCTION START ===");
+  console.log("=== MINIMAL TEST FUNCTION START ===");
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -19,172 +18,44 @@ serve(async (req) => {
   try {
     console.log("Method:", req.method);
     
-    // Get environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // Test environment variables
     const ideogramKey = Deno.env.get('IDEOGRAM_API_KEY');
-    
-    console.log("Environment check:");
-    console.log("- Supabase URL:", !!supabaseUrl);
-    console.log("- Supabase Key:", !!supabaseKey);
-    console.log("- Ideogram Key:", !!ideogramKey);
+    console.log("Ideogram Key exists:", !!ideogramKey);
     
     if (!ideogramKey) {
       throw new Error("IDEOGRAM_API_KEY not found in environment");
     }
     
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase configuration not found");
-    }
-    
     // Parse request body
-    const { title, author, genre, style, description, tagline } = await req.json();
-    console.log("Request received for:", { title, author, genre, style });
+    const body = await req.json();
+    console.log("Request body keys:", Object.keys(body));
     
-    // Validate required fields
-    if (!title || !author || !genre || !style) {
-      throw new Error("Missing required fields: title, author, genre, style");
-    }
+    // Just return success with mock data for now
+    const mockImages = [
+      { url: "https://via.placeholder.com/400x600/000000/FFFFFF?text=Cover+1" },
+      { url: "https://via.placeholder.com/400x600/333333/FFFFFF?text=Cover+2" },
+      { url: "https://via.placeholder.com/400x600/666666/FFFFFF?text=Cover+3" },
+      { url: "https://via.placeholder.com/400x600/999999/FFFFFF?text=Cover+4" }
+    ];
     
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    // Get authorization header
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error("Authorization header required");
-    }
-    
-    // Extract JWT token
-    const token = authHeader.replace('Bearer ', '');
-    
-    // Get user from token
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      console.error("User authentication error:", userError);
-      throw new Error("Invalid authentication token");
-    }
-    
-    console.log("Authenticated user:", user.id);
-    
-    // Check user credits
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('credits')
-      .eq('user_id', user.id)
-      .single();
-      
-    if (profileError) {
-      console.error("Profile fetch error:", profileError);
-      throw new Error("Failed to fetch user profile");
-    }
-    
-    if (!profile || profile.credits < 1) {
-      throw new Error("Insufficient credits. Please purchase more credits to generate covers.");
-    }
-    
-    console.log("User has", profile.credits, "credits");
-    
-    // Create prompt for Ideogram
-    const promptParts = [
-      `Create a professional book cover for "${title}" by ${author}`,
-      `Genre: ${genre}`,
-      `Style: ${style}`,
-      description ? `Description: ${description}` : '',
-      tagline ? `Tagline: ${tagline}` : '',
-      'High quality, professional book cover design, typography, realistic, detailed'
-    ].filter(Boolean);
-    
-    const prompt = promptParts.join('. ');
-    console.log("Generated prompt:", prompt);
-    
-    // Test Ideogram API first with a simple request
-    console.log("Testing Ideogram API connection...");
-    const testResponse = await fetch('https://api.ideogram.ai/generate', {
-      method: 'POST',
-      headers: {
-        'Api-Key': ideogramKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        image_request: {
-          prompt: "simple test image",
-          aspect_ratio: "ASPECT_1_1",
-          model: "V_2"
-        }
-      }),
-    });
-
-    console.log("Test response status:", testResponse.status);
-    
-    if (!testResponse.ok) {
-      const errorText = await testResponse.text();
-      console.error("Ideogram API test failed:", testResponse.status, errorText);
-      throw new Error(`Ideogram API test failed: ${testResponse.status} - ${errorText}`);
-    }
-
-    // Now make the real request
-    console.log("Calling Ideogram API for real request...");
-    const ideogramResponse = await fetch('https://api.ideogram.ai/generate', {
-      method: 'POST',
-      headers: {
-        'Api-Key': ideogramKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        image_request: {
-          prompt: prompt,
-          aspect_ratio: "ASPECT_10_16", // Book cover aspect ratio
-          model: "V_2",
-          magic_prompt_option: "AUTO",
-          num_images: 4 // Generate 4 covers
-        }
-      }),
-    });
-
-    if (!ideogramResponse.ok) {
-      const errorText = await ideogramResponse.text();
-      console.error("Ideogram API error:", ideogramResponse.status, errorText);
-      throw new Error(`Ideogram API error: ${ideogramResponse.status} - ${errorText}`);
-    }
-
-    const ideogramData = await ideogramResponse.json();
-    console.log("Ideogram response received, images:", ideogramData.data?.length || 0);
-    
-    if (!ideogramData.data || ideogramData.data.length === 0) {
-      throw new Error("No images generated by Ideogram");
-    }
-    // Deduct credit
-    const { error: creditError } = await supabase
-      .from('profiles')
-      .update({ credits: profile.credits - 1 })
-      .eq('user_id', user.id);
-      
-    if (creditError) {
-      console.error("Credit deduction error:", creditError);
-      // Don't throw here, as the image was generated successfully
-    } else {
-      console.log("Credit deducted, remaining:", profile.credits - 1);
-    }
-    
-    // Return the generated images
     return new Response(JSON.stringify({
       success: true,
-      images: ideogramData.data,
-      remainingCredits: profile.credits - 1
+      images: mockImages,
+      remainingCredits: 9,
+      message: "Mock covers generated successfully"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (error) {
-    console.error("Generate covers error:", error.message);
+    console.error("Test function error:", error.message);
     console.error("Error stack:", error.stack);
     
     return new Response(JSON.stringify({ 
       error: error.message,
       details: error.stack,
-      type: "generate_covers_error"
+      type: "test_function_error"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
