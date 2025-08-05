@@ -98,8 +98,33 @@ serve(async (req) => {
     const prompt = promptParts.join('. ');
     console.log("Generated prompt:", prompt);
     
-    // Call Ideogram API
-    console.log("Calling Ideogram API...");
+    // Test Ideogram API first with a simple request
+    console.log("Testing Ideogram API connection...");
+    const testResponse = await fetch('https://api.ideogram.ai/generate', {
+      method: 'POST',
+      headers: {
+        'Api-Key': ideogramKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image_request: {
+          prompt: "simple test image",
+          aspect_ratio: "ASPECT_1_1",
+          model: "V_2"
+        }
+      }),
+    });
+
+    console.log("Test response status:", testResponse.status);
+    
+    if (!testResponse.ok) {
+      const errorText = await testResponse.text();
+      console.error("Ideogram API test failed:", testResponse.status, errorText);
+      throw new Error(`Ideogram API test failed: ${testResponse.status} - ${errorText}`);
+    }
+
+    // Now make the real request
+    console.log("Calling Ideogram API for real request...");
     const ideogramResponse = await fetch('https://api.ideogram.ai/generate', {
       method: 'POST',
       headers: {
