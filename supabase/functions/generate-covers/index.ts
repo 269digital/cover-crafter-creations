@@ -91,14 +91,18 @@ serve(async (req) => {
       throw new Error(`Database error: ${profileError.message}`);
     }
 
-    if (!profile) {
+    let userProfile = profile;
+
+    if (!userProfile) {
       console.log("No profile found, creating one...");
       const { data: newProfile, error: createError } = await supabase
         .from('profiles')
-        .insert({
+        .upsert({
           user_id: user.id,
-          email: user.email,
+          email: user.email || '',
           credits: 10 // Give new users 10 credits to start
+        }, {
+          onConflict: 'user_id'
         })
         .select('credits')
         .single();
@@ -108,15 +112,15 @@ serve(async (req) => {
         throw new Error(`Could not create user profile: ${createError.message}`);
       }
 
-      profile = newProfile;
-      console.log("Created new profile with credits:", newProfile.credits);
+      userProfile = newProfile;
+      console.log("Created/updated profile with credits:", newProfile.credits);
     }
 
-    if (profile.credits < 2) {
+    if (userProfile.credits < 2) {
       return new Response(JSON.stringify({
         error: 'Insufficient credits',
         message: 'You need at least 2 credits to generate book covers',
-        remainingCredits: profile.credits
+        remainingCredits: userProfile.credits
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
@@ -188,7 +192,7 @@ serve(async (req) => {
     // Deduct credits only after successful generation
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ credits: profile.credits - 2 })
+      .update({ credits: userProfile.credits - 2 })
       .eq('user_id', user.id);
 
     if (updateError) {
@@ -196,7 +200,7 @@ serve(async (req) => {
       // Continue anyway - don't fail the whole request for credit update issues
     }
 
-    const remainingCredits = profile.credits - 2;
+    const remainingCredits = userProfile.credits - 2;
     console.log(`Successfully generated ${images.length} covers. Credits remaining: ${remainingCredits}`);
 
     return new Response(JSON.stringify({
