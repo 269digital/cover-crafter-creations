@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log("=== MINIMAL TEST FUNCTION START ===");
+  console.log("=== SUPER SIMPLE TEST FUNCTION START ===");
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -17,45 +17,36 @@ serve(async (req) => {
 
   try {
     console.log("Method:", req.method);
+    console.log("URL:", req.url);
     
-    // Test environment variables (commented out for testing)
-    // const ideogramKey = Deno.env.get('IDEOGRAM_API_KEY');
-    // console.log("Ideogram Key exists:", !!ideogramKey);
-    
-    // if (!ideogramKey) {
-    //   throw new Error("IDEOGRAM_API_KEY not found in environment");
-    // }
-    
-    // Parse request body
-    const body = await req.json();
-    console.log("Request body keys:", Object.keys(body));
-    
-    // Just return success with mock data for now
+    // Return success immediately with mock data
     const mockImages = [
-      { url: "https://via.placeholder.com/400x600/000000/FFFFFF?text=Cover+1" },
-      { url: "https://via.placeholder.com/400x600/333333/FFFFFF?text=Cover+2" },
-      { url: "https://via.placeholder.com/400x600/666666/FFFFFF?text=Cover+3" },
-      { url: "https://via.placeholder.com/400x600/999999/FFFFFF?text=Cover+4" }
+      { url: "https://via.placeholder.com/400x600/FF6B6B/FFFFFF?text=Cover+1" },
+      { url: "https://via.placeholder.com/400x600/4ECDC4/FFFFFF?text=Cover+2" },
+      { url: "https://via.placeholder.com/400x600/45B7D1/FFFFFF?text=Cover+3" },
+      { url: "https://via.placeholder.com/400x600/96CEB4/FFFFFF?text=Cover+4" }
     ];
+    
+    console.log("Returning mock data with", mockImages.length, "images");
     
     return new Response(JSON.stringify({
       success: true,
       images: mockImages,
       remainingCredits: 9,
-      message: "Mock covers generated successfully"
+      message: "Test mode - Mock covers generated successfully"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (error) {
-    console.error("Test function error:", error.message);
+    console.error("Super simple test error:", error.message);
     console.error("Error stack:", error.stack);
     
     return new Response(JSON.stringify({ 
       error: error.message,
       details: error.stack,
-      type: "test_function_error"
+      type: "super_simple_test_error"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
