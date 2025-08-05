@@ -50,9 +50,9 @@ serve(async (req) => {
       });
     }
 
-    console.log("Step 3: Creating Supabase client");
-    // Use service key for all operations since JWT verification is disabled
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log("Step 3: Creating Supabase clients");
+    // Use service key for privileged operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log("Step 4: Getting authorization header");
     // Get authorization header for manual validation
@@ -81,8 +81,19 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     console.log("Token extracted, length:", token.length);
     
-    // Manually verify JWT token using service role client
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    // Create anon client with the JWT token for verification
+    const supabaseAuth = createClient(
+      supabaseUrl, 
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { 
+        global: { 
+          headers: { Authorization: authHeader } 
+        } 
+      }
+    );
+    
+    // Verify JWT token using anon client with Authorization header
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     
     console.log("Manual JWT verification result:", { 
       userId: user?.id, 
@@ -105,8 +116,8 @@ serve(async (req) => {
     console.log("User authenticated successfully:", user.id, user.email);
 
     console.log("Step 7: Checking user credits");
-    // Check user credits using service role client
-    const { data: profile, error: profileError } = await supabase
+    // Check user credits using admin client
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('credits')
       .eq('user_id', user.id)
@@ -123,7 +134,7 @@ serve(async (req) => {
 
     if (!userProfile) {
       console.log("No profile found, creating one...");
-      const { data: newProfile, error: createError } = await supabase
+      const { data: newProfile, error: createError } = await supabaseAdmin
         .from('profiles')
         .upsert({
           user_id: user.id,
@@ -218,7 +229,7 @@ serve(async (req) => {
     }));
 
     // Deduct credits only after successful generation
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({ credits: userProfile.credits - 2 })
       .eq('user_id', user.id);
