@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Palette, Sparkles, CreditCard, Download, Heart, Zap, Moon, Sun, Shuffle } from "lucide-react";
+import { Palette, Sparkles, CreditCard, Download, Heart, Zap, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -33,10 +32,7 @@ const Studio = () => {
     generationId?: string;
     isUpscaled: boolean;
     isUpscaling: boolean;
-    isRemixing: boolean;
   }>>([]);
-  const [remixIndex, setRemixIndex] = useState<number | null>(null);
-  const [remixPrompt, setRemixPrompt] = useState("");
 
   const genres = [
     "Thriller",
@@ -105,7 +101,6 @@ const Studio = () => {
           generationId: data.generationIds?.[index],
           isUpscaled: false,
           isUpscaling: false,
-          isRemixing: false,
         }));
         setImageData(newImageData);
         await refreshCredits(); // Refresh credits to show updated count
@@ -227,87 +222,6 @@ const Studio = () => {
     }
   };
 
-  const handleRemix = async (index: number) => {
-    if (credits < 2) {
-      toast({
-        title: "Insufficient Credits",
-        description: "Remix requires 2 credits. Please purchase more credits.",
-        variant: "destructive",
-      });
-      navigate("/buy-credits");
-      return;
-    }
-
-    const imageInfo = imageData[index];
-    if (!imageInfo?.url || !imageInfo?.generationId) {
-      toast({
-        title: "Remix Failed",
-        description: "Unable to remix this image. Generation ID not found.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Set remixing state
-    setImageData(prev => prev.map((img, idx) => 
-      idx === index ? { ...img, isRemixing: true } : img
-    ));
-
-    try {
-      // Create the original prompt based on the form data
-      const originalPrompt = `Professional book cover design for "${bookTitle}" by ${authorName}. ${genre} genre, ${style} style. ${description}. High quality, publishable book cover with ONLY the exact title "${bookTitle}" and author name "${authorName}" as text, no other text or words, professional typography, book cover layout, 2:3 aspect ratio`;
-      
-      const { data, error } = await supabase.functions.invoke('remix-cover', {
-        body: { 
-          originalImageUrl: imageInfo.url,
-          originalPrompt: originalPrompt,
-          additionalPrompt: remixPrompt || "Improve the design and make it more visually appealing",
-          ideogramId: imageInfo.generationId
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data?.success) {
-        // Replace the image at the same index with the remixed version
-        setImageData(prev => prev.map((img, idx) => 
-          idx === index ? { 
-            ...img, 
-            url: data.imageUrl,
-            isRemixing: false,
-            isUpscaled: false // Reset upscaled state since this is a new image
-          } : img
-        ));
-        
-        // Also update the generatedImages array for backward compatibility
-        setGeneratedImages(prev => prev.map((url, idx) => 
-          idx === index ? data.imageUrl : url
-        ));
-
-        await refreshCredits();
-        toast({
-          title: "Remix Successful!",
-          description: `Cover ${index + 1} has been remixed with your suggestions.`,
-        });
-        
-        // Reset remix state
-        setRemixIndex(null);
-        setRemixPrompt("");
-      }
-    } catch (error: any) {
-      console.error('Remix error:', error);
-      setImageData(prev => prev.map((img, idx) => 
-        idx === index ? { ...img, isRemixing: false } : img
-      ));
-      toast({
-        title: "Remix Failed",
-        description: error.message || "Failed to remix image. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -504,81 +418,29 @@ const Studio = () => {
                             Upscaled
                           </div>
                         )}
-                        {/* Mobile buttons - always visible */}
+                         {/* Mobile buttons - always visible */}
                         <div className="absolute bottom-2 left-2 right-2 sm:hidden">
                           <div className="flex gap-1">
                             {!image.isUpscaled ? (
-                              <>
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      disabled={image.isRemixing}
-                                      className="flex-1 bg-white/95 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold text-xs"
-                                      onClick={() => setRemixIndex(index)}
-                                    >
-                                      {image.isRemixing ? (
-                                        <>
-                                          <div className="animate-spin rounded-full h-3 w-3 border-2 border-gray-900 border-t-transparent mr-1"></div>
-                                          Remixing...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Shuffle className="h-3 w-3 mr-1" />
-                                          Remix (2)
-                                        </>
-                                      )}
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-md">
-                                    <DialogHeader>
-                                      <DialogTitle>Remix Cover</DialogTitle>
-                                    </DialogHeader>
-                                    <div className="space-y-4">
-                                      <div>
-                                        <Label htmlFor="remix-prompt">Additional Instructions (Optional)</Label>
-                                        <Textarea
-                                          id="remix-prompt"
-                                          placeholder="e.g., Make the text gold, add more dramatic lighting, change to dark forest background..."
-                                          value={remixPrompt}
-                                          onChange={(e) => setRemixPrompt(e.target.value)}
-                                          rows={3}
-                                          className="mt-2"
-                                        />
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <Button
-                                          onClick={() => handleRemix(index)}
-                                          disabled={image.isRemixing}
-                                          className="flex-1"
-                                        >
-                                          {image.isRemixing ? "Remixing..." : "Remix (2 Credits)"}
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </DialogContent>
-                                </Dialog>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => handleUpscale(index)}
-                                  disabled={image.isUpscaling}
-                                  className="flex-1 bg-white/95 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold text-xs"
-                                >
-                                  {image.isUpscaling ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-gray-900 border-t-transparent mr-1"></div>
-                                      Upscaling...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Zap className="h-3 w-3 mr-1" />
-                                      Upscale (2)
-                                    </>
-                                  )}
-                                </Button>
-                              </>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleUpscale(index)}
+                                disabled={image.isUpscaling}
+                                className="w-full bg-white/95 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold text-xs"
+                              >
+                                {image.isUpscaling ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-gray-900 border-t-transparent mr-1"></div>
+                                    Upscaling...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Zap className="h-3 w-3 mr-1" />
+                                    Upscale (2)
+                                  </>
+                                )}
+                              </Button>
                             ) : (
                               <Button
                                 size="sm"
@@ -596,77 +458,25 @@ const Studio = () => {
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg hidden sm:block">
                           <div className="flex flex-col items-center justify-center h-full gap-3 p-4">
                             {!image.isUpscaled ? (
-                              <>
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button
-                                      size="lg"
-                                      variant="outline"
-                                      disabled={image.isRemixing}
-                                      className="bg-white/90 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold"
-                                      onClick={() => setRemixIndex(index)}
-                                    >
-                                      {image.isRemixing ? (
-                                        <>
-                                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-900 border-t-transparent mr-2"></div>
-                                          Remixing...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Shuffle className="h-4 w-4 mr-2" />
-                                          Remix (2 Credits)
-                                        </>
-                                      )}
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-md">
-                                    <DialogHeader>
-                                      <DialogTitle>Remix Cover</DialogTitle>
-                                    </DialogHeader>
-                                    <div className="space-y-4">
-                                      <div>
-                                        <Label htmlFor="remix-prompt">Additional Instructions (Optional)</Label>
-                                        <Textarea
-                                          id="remix-prompt"
-                                          placeholder="e.g., Make the text gold, add more dramatic lighting, change to dark forest background..."
-                                          value={remixPrompt}
-                                          onChange={(e) => setRemixPrompt(e.target.value)}
-                                          rows={3}
-                                          className="mt-2"
-                                        />
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <Button
-                                          onClick={() => handleRemix(index)}
-                                          disabled={image.isRemixing}
-                                          className="flex-1"
-                                        >
-                                          {image.isRemixing ? "Remixing..." : "Remix (2 Credits)"}
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </DialogContent>
-                                </Dialog>
-                                <Button
-                                  size="lg"
-                                  variant="secondary"
-                                  onClick={() => handleUpscale(index)}
-                                  disabled={image.isUpscaling}
-                                  className="w-full min-w-[120px] bg-white/90 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold"
-                                >
-                                  {image.isUpscaling ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-900 border-t-transparent mr-2"></div>
-                                      Upscaling...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Zap className="h-4 w-4 mr-2" />
-                                      Upscale (2 Credits)
-                                    </>
-                                  )}
-                                </Button>
-                              </>
+                              <Button
+                                size="lg"
+                                variant="secondary"
+                                onClick={() => handleUpscale(index)}
+                                disabled={image.isUpscaling}
+                                className="w-full min-w-[120px] bg-white/90 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold"
+                              >
+                                {image.isUpscaling ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-900 border-t-transparent mr-2"></div>
+                                    Upscaling...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Zap className="h-4 w-4 mr-2" />
+                                    Upscale (2 Credits)
+                                  </>
+                                )}
+                              </Button>
                             ) : (
                               <Button
                                 size="lg"

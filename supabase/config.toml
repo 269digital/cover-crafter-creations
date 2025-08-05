@@ -68,6 +68,3 @@ verify_jwt = true
 
 [functions.upscale-cover]
 verify_jwt = true
-
-[functions.remix-cover]
-verify_jwt = true
