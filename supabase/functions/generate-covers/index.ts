@@ -65,10 +65,9 @@ serve(async (req) => {
     console.log(`Authenticated user: ${userId}`);
 
     // Get request body
-    const { title, author, genre, style, description, coverType, taglineNarrator } = await req.json();
-    console.log(`Request from user ${userId} for: ${title} by ${author}, Cover Type: ${coverType}`);
-    console.log(`TaglineNarrator received:`, taglineNarrator);
-    console.log(`Full request body:`, JSON.stringify({ title, author, genre, style, description, coverType, taglineNarrator }));
+    const { title, author, genre, style, description, tagline } = await req.json();
+    console.log(`Request from user ${userId} for: ${title} by ${author}`);
+    console.log(`Full request body:`, JSON.stringify({ title, author, genre, style, description, tagline }));
 
     // Credit check temporarily disabled for testing
     // Get user profile and check credits - using maybeSingle to avoid errors
@@ -99,27 +98,18 @@ serve(async (req) => {
     }
 
     // Generate AI images using Ideogram FIRST, then deduct credit
-    console.log('Generating 4 covers with Ideogram...');
+    console.log('Generating 4 book covers with Ideogram...');
     
-    // Determine aspect ratio and text requirements based on cover type
-    const aspectRatio = coverType === 'eBook Cover' ? 'ASPECT_2_3' : 'ASPECT_1_1';
-    console.log(`Cover type: ${coverType}, Setting aspect ratio to: ${aspectRatio}`);
-    const aspectRatioText = coverType === 'eBook Cover' ? '2:3 aspect ratio' : '1:1 square aspect ratio';
+    // Use 2:3 aspect ratio for book covers
+    const aspectRatio = 'ASPECT_2_3';
+    console.log(`Setting aspect ratio to: ${aspectRatio}`);
     
-    // Create text requirements based on cover type with explicit positioning
-    let textRequirements = '';
-    if (coverType === 'Album Cover') {
-      textRequirements = `CRITICAL: Text must fit completely within image borders. Album title "${title}" positioned in upper area with sufficient margin from edges. Artist name "${author}" positioned below title with clear spacing. NO TEXT CUTOFF.`;
-    } else if (coverType === 'Audiobook Cover') {
-      const narratorText = taglineNarrator ? ` and "Narrated by ${taglineNarrator}"` : '';
-      textRequirements = `CRITICAL: All text must be fully visible within image boundaries. Title "${title}" centered in upper portion with wide margins. Author "${author}"${narratorText} positioned below with adequate spacing from all edges. NO TEXT TRUNCATION.`;
-    } else { // eBook Cover
-      const taglineText = taglineNarrator ? ` and tagline "${taglineNarrator}"` : '';
-      textRequirements = `CRITICAL: Complete text visibility required. Book title "${title}" prominently placed in upper area with generous margins from edges. Author name "${author}"${taglineText} positioned below title with sufficient border clearance. ALL TEXT MUST BE COMPLETE AND UNCUT.`;
-    }
+    // Create text requirements for book covers with explicit positioning
+    const taglineText = tagline ? ` and tagline "${tagline}"` : '';
+    const textRequirements = `CRITICAL: Complete text visibility required. Book title "${title}" prominently placed in upper area with generous margins from edges. Author name "${author}"${taglineText} positioned below title with sufficient border clearance. ALL TEXT MUST BE COMPLETE AND UNCUT.`;
     
-    // Create detailed prompt for cover with explicit text safety instructions
-    const basePrompt = `Professional ${coverType.toLowerCase()} design with MANDATORY text safety rules: ${textRequirements} Visual theme: ${description}. Genre: ${genre}, Style: ${style}. Image format: ${aspectRatioText}. Typography must be sized appropriately to fit completely within frame. Leave adequate white space around all text elements. Text positioning must account for full character width and height.`;
+    // Create detailed prompt for book cover with explicit text safety instructions
+    const basePrompt = `Professional book cover design with MANDATORY text safety rules: ${textRequirements} Visual theme: ${description}. Genre: ${genre}, Style: ${style}. Image format: 2:3 aspect ratio. Typography must be sized appropriately to fit completely within frame. Leave adequate white space around all text elements. Text positioning must account for full character width and height.`;
     
     console.log(`Generating 4 covers with base prompt: ${basePrompt}`);
 
@@ -197,7 +187,7 @@ serve(async (req) => {
         .insert({
           user_id: userId,
           prompt: fullPrompt,
-          cover_type: coverType || 'eBook Cover',
+          cover_type: 'eBook Cover',
           image_url1: generatedImages[0] || null,
           image_url2: generatedImages[1] || null,
           image_url3: generatedImages[2] || null,
@@ -217,7 +207,7 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         success: true,
-        message: `Generated ${generatedImages.length} covers for "${title}" (Testing Mode)`,
+        message: `Generated ${generatedImages.length} book covers for "${title}" (Testing Mode)`,
         images: generatedImages,
         generationIds: generationIds,
         creditsRemaining: 999
