@@ -19,12 +19,12 @@ serve(async (req) => {
     console.log("Method:", req.method);
     console.log("URL:", req.url);
     
-    // Return success immediately with mock data
+    // Return success immediately with mock data using real images
     const mockImages = [
-      { url: "https://via.placeholder.com/400x600/FF6B6B/FFFFFF?text=Cover+1" },
-      { url: "https://via.placeholder.com/400x600/4ECDC4/FFFFFF?text=Cover+2" },
-      { url: "https://via.placeholder.com/400x600/45B7D1/FFFFFF?text=Cover+3" },
-      { url: "https://via.placeholder.com/400x600/96CEB4/FFFFFF?text=Cover+4" }
+      { url: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7" },
+      { url: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b" },
+      { url: "https://images.unsplash.com/photo-1518770660439-4636190af475" },
+      { url: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6" }
     ];
     
     console.log("Returning mock data with", mockImages.length, "images");
