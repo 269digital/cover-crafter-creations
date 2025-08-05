@@ -100,6 +100,7 @@ const Studio = () => {
         // Extract URLs from Ideogram response objects
         const imageUrls = (data.images || []).map((img: any) => img.url);
         setGeneratedImages(imageUrls);
+        
         // Initialize image data with generation IDs if available
         const newImageData = imageUrls.map((url: string, index: number) => ({
           url,
@@ -108,6 +109,28 @@ const Studio = () => {
           isUpscaling: false,
         }));
         setImageData(newImageData);
+        
+        // Save creation record to database
+        try {
+          const { error: saveError } = await supabase
+            .from('creations')
+            .insert({
+              user_id: user.id,
+              prompt: `${genre} book cover for "${title}" by ${author}. ${style} style. ${description}`,
+              image_url1: imageUrls[0] || null,
+              image_url2: imageUrls[1] || null,
+              image_url3: imageUrls[2] || null,
+              image_url4: imageUrls[3] || null,
+              cover_type: 'eBook Cover'
+            });
+          
+          if (saveError) {
+            console.error('Error saving creation:', saveError);
+          }
+        } catch (saveError) {
+          console.error('Error saving creation:', saveError);
+        }
+        
         await refreshCredits(); // Refresh credits to show updated count
         toast({
           title: "Success!",
