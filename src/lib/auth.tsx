@@ -42,12 +42,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from("profiles")
         .select("credits, user_id, email")
         .eq("user_id", user.id)
-        .maybeSingle();
+        .single(); // Use single() instead of maybeSingle() to get clear errors
       
       console.log('Credits query result:', { data, error, userIdSearched: user.id });
       
       if (error) {
         console.error("Error fetching credits:", error);
+        // Try to find the profile anyway
+        const { data: allProfiles } = await supabase
+          .from("profiles")
+          .select("credits, user_id, email")
+          .limit(5);
+        console.log('All profiles for debugging:', allProfiles);
         setCredits(0);
         return;
       }
