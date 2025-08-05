@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
 
+// Book cover generator component
 const Studio = () => {
   const { user, credits, signOut, refreshCredits } = useAuth();
   const navigate = useNavigate();
