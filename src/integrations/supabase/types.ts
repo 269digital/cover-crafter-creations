@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       creations: {
         Row: {
+          cover_type: string
           created_at: string
           id: string
           ideogram_id: string | null
@@ -28,6 +29,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cover_type?: string
           created_at?: string
           id?: string
           ideogram_id?: string | null
@@ -40,6 +42,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cover_type?: string
           created_at?: string
           id?: string
           ideogram_id?: string | null

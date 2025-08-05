@@ -53,8 +53,8 @@ serve(async (req) => {
     console.log(`Authenticated user: ${userId}`);
 
     // Get request body
-    const { title, author, genre, style, description } = await req.json();
-    console.log(`Request from user ${userId} for: ${title} by ${author}`);
+    const { title, author, genre, style, description, coverType } = await req.json();
+    console.log(`Request from user ${userId} for: ${title} by ${author}, Cover Type: ${coverType}`);
 
     // Credit check temporarily disabled for testing
     // Get user profile and check credits - using maybeSingle to avoid errors
@@ -87,8 +87,12 @@ serve(async (req) => {
     // Generate AI images using Ideogram FIRST, then deduct credit
     console.log('Generating 4 covers with Ideogram...');
     
-    // Create detailed prompt for book cover
-    const basePrompt = `Professional book cover design for "${title}" by ${author}. ${genre} genre, ${style} style. ${description}. High quality, publishable book cover with ONLY the exact title "${title}" and author name "${author}" as text, no other text or words, professional typography, book cover layout, 2:3 aspect ratio`;
+    // Determine aspect ratio based on cover type
+    const aspectRatio = coverType === 'eBook Cover' ? 'ASPECT_2_3' : 'ASPECT_1_1';
+    const aspectRatioText = coverType === 'eBook Cover' ? '2:3 aspect ratio' : '1:1 square aspect ratio';
+    
+    // Create detailed prompt for cover
+    const basePrompt = `Professional ${coverType.toLowerCase()} design for "${title}" by ${author}. ${genre} genre, ${style} style. ${description}. High quality, publishable cover with ONLY the exact title "${title}" and author name "${author}" as text, no other text or words, professional typography, cover layout, ${aspectRatioText}`;
     
     console.log(`Generating 4 covers with base prompt: ${basePrompt}`);
 
@@ -112,7 +116,7 @@ serve(async (req) => {
           body: JSON.stringify({
             image_request: {
               prompt: variations[i],
-              aspect_ratio: "ASPECT_2_3",
+              aspect_ratio: aspectRatio,
               model: "V_2",
               magic_prompt_option: "AUTO",
               seed: Math.floor(Math.random() * 1000000),
@@ -165,6 +169,7 @@ serve(async (req) => {
         .insert({
           user_id: userId,
           prompt: fullPrompt,
+          cover_type: coverType || 'eBook Cover',
           image_url1: generatedImages[0] || null,
           image_url2: generatedImages[1] || null,
           image_url3: generatedImages[2] || null,

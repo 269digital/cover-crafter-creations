@@ -19,11 +19,12 @@ const Studio = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const [coverType, setCoverType] = useState("eBook Cover");
   const [genre, setGenre] = useState("");
   const [style, setStyle] = useState("");
-  const [bookTitle, setBookTitle] = useState("");
-  
-  const [authorName, setAuthorName] = useState("");
+  const [title, setTitle] = useState("");
+  const [authorArtist, setAuthorArtist] = useState("");
+  const [taglineNarrator, setTaglineNarrator] = useState("");
   const [description, setDescription] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
@@ -65,7 +66,7 @@ const Studio = () => {
     //   return;
     // }
 
-    if (!genre || !style || !bookTitle || !authorName || !description) {
+    if (!genre || !style || !title || !authorArtist || !description) {
       toast({
         title: "Missing Information",
         description: "Please fill in all fields before generating covers.",
@@ -81,11 +82,12 @@ const Studio = () => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-covers', {
         body: { 
-          title: bookTitle,
-          author: authorName,
+          title,
+          author: authorArtist,
           genre,
           style,
-          description
+          description,
+          coverType
         }
       });
 
@@ -127,7 +129,7 @@ const Studio = () => {
       // This bypasses CORS by letting the browser handle the download
       const link = document.createElement('a');
       link.href = imageUrl;
-      link.download = `${bookTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_cover_${index + 1}.jpg`;
+      link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_cover_${index + 1}.jpg`;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       
@@ -178,7 +180,7 @@ const Studio = () => {
       const { data, error } = await supabase.functions.invoke('upscale-cover', {
         body: { 
           imageUrl: imageInfo.url,
-          prompt: `High quality ${genre} book cover for "${bookTitle}", ${style} style, sharp details, professional appearance`
+          prompt: `High quality ${genre} ${coverType.toLowerCase()} for "${title}", ${style} style, sharp details, professional appearance`
         }
       });
 
@@ -308,6 +310,21 @@ const Studio = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Cover Type Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="coverType">Cover Type:</Label>
+                <Select value={coverType} onValueChange={setCoverType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose cover type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="eBook Cover">eBook Cover</SelectItem>
+                    <SelectItem value="Audiobook Cover">Audiobook Cover</SelectItem>
+                    <SelectItem value="Album Cover">Album Cover</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Genre Selection */}
               <div className="space-y-2">
                 <Label htmlFor="genre">Select Genre</Label>
@@ -342,34 +359,71 @@ const Studio = () => {
                 </Select>
               </div>
 
-              {/* Book Title */}
+              {/* Dynamic Title Field */}
               <div className="space-y-2">
-                <Label htmlFor="title">Book Title</Label>
+                <Label htmlFor="title">
+                  {coverType === "Album Cover" ? "Album Title" : "Title"}
+                </Label>
                 <Input
                   id="title"
-                  placeholder="Enter your book title"
-                  value={bookTitle}
-                  onChange={(e) => setBookTitle(e.target.value)}
+                  placeholder={
+                    coverType === "Album Cover" 
+                      ? "Enter your album title" 
+                      : "Enter your title"
+                  }
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
 
-              {/* Author Name */}
+              {/* Dynamic Author/Artist Field */}
               <div className="space-y-2">
-                <Label htmlFor="author">Author Name</Label>
+                <Label htmlFor="authorArtist">
+                  {coverType === "Album Cover" ? "Artist Name" : "Author Name"}
+                </Label>
                 <Input
-                  id="author"
-                  placeholder="Enter author name"
-                  value={authorName}
-                  onChange={(e) => setAuthorName(e.target.value)}
+                  id="authorArtist"
+                  placeholder={
+                    coverType === "Album Cover" 
+                      ? "Enter artist name" 
+                      : "Enter author name"
+                  }
+                  value={authorArtist}
+                  onChange={(e) => setAuthorArtist(e.target.value)}
                 />
               </div>
+
+              {/* Dynamic Third Field - Conditional Based on Cover Type */}
+              {coverType !== "Album Cover" && (
+                <div className="space-y-2">
+                  <Label htmlFor="taglineNarrator">
+                    {coverType === "eBook Cover" ? "Tagline" : "Narrated by"}
+                  </Label>
+                  <Input
+                    id="taglineNarrator"
+                    placeholder={
+                      coverType === "eBook Cover" 
+                        ? "Enter tagline (optional)" 
+                        : "Enter narrator name"
+                    }
+                    value={taglineNarrator}
+                    onChange={(e) => setTaglineNarrator(e.target.value)}
+                  />
+                </div>
+              )}
 
               {/* Description */}
               <div className="space-y-2">
                 <Label htmlFor="description">Describe the Cover Art</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe the visual elements you want on your cover (e.g., dark forest, mystical creatures, ancient castle...)"
+                  placeholder={
+                    coverType === "Album Cover" 
+                      ? "Describe the visual elements you want on your album cover (e.g., instruments, band members, abstract art...)"
+                      : coverType === "Audiobook Cover"
+                      ? "Describe the visual elements you want on your audiobook cover (e.g., microphone, sound waves, thematic imagery...)"
+                      : "Describe the visual elements you want on your book cover (e.g., dark forest, mystical creatures, ancient castle...)"
+                  }
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
@@ -411,7 +465,9 @@ const Studio = () => {
                         <img 
                           src={image.url} 
                           alt={`Generated cover ${index + 1}`}
-                          className="aspect-[2/3] w-full object-cover rounded-lg shadow-sm"
+                          className={`${
+                            coverType === 'eBook Cover' ? 'aspect-[2/3]' : 'aspect-square'
+                          } w-full object-cover rounded-lg shadow-sm`}
                         />
                         {image.isUpscaled && (
                           <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
@@ -504,7 +560,9 @@ const Studio = () => {
                     {[1, 2, 3, 4].map((i) => (
                       <div 
                         key={i} 
-                        className="aspect-[2/3] bg-muted rounded-lg flex items-center justify-center text-muted-foreground"
+                        className={`${
+                          coverType === 'eBook Cover' ? 'aspect-[2/3]' : 'aspect-square'
+                        } bg-muted rounded-lg flex items-center justify-center text-muted-foreground`}
                       >
                         Cover {i}
                       </div>
