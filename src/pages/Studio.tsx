@@ -16,7 +16,7 @@ import { useTheme } from "next-themes";
 
 // Book cover generator component
 const Studio = () => {
-  const { user, credits, signOut, refreshCredits } = useAuth();
+  const { user, credits, signOut, refreshCredits, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
@@ -230,6 +230,31 @@ const Studio = () => {
     await signOut();
     navigate("/");
   };
+
+  // Redirect to auth if not authenticated
+  React.useEffect(() => {
+    if (!loading && !user) {
+      console.log('User not authenticated, redirecting to auth page');
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  // Show loading screen while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if no user (will redirect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
