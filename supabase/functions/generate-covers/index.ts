@@ -19,16 +19,30 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== INITIALIZATION START ===');
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    console.log('Environment check:', {
+      supabaseUrl: !!supabaseUrl,
+      supabaseServiceKey: !!supabaseServiceKey,
+      supabaseAnon: !!supabaseAnon
+    });
 
     if (!supabaseUrl || !supabaseServiceKey || !supabaseAnon) {
+      console.error('Missing environment variables:', {
+        supabaseUrl: !!supabaseUrl,
+        supabaseServiceKey: !!supabaseServiceKey,
+        supabaseAnon: !!supabaseAnon
+      });
       throw new Error('Missing required environment variables');
     }
 
+    console.log('Creating Supabase client...');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('Supabase client created successfully');
 
     // Get the authorization header and extract user
     const authHeader = req.headers.get('authorization');
@@ -78,9 +92,10 @@ serve(async (req) => {
       throw new Error(`User authentication failed: ${error.message}`);
     }
 
+    console.log('=== REQUEST BODY PARSING ===');
     // Get request body
     const { title, author, genre, style, description, tagline } = await req.json();
-    console.log(`Request from user ${userId} for: ${title} by ${author}`);
+    console.log(`✅ Request from user ${userId} for: ${title} by ${author}`);
     console.log(`Full request body:`, JSON.stringify({ title, author, genre, style, description, tagline }));
 
     // Credit check temporarily disabled for testing
