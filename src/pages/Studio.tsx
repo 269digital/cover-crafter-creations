@@ -87,7 +87,8 @@ const Studio = () => {
           genre,
           style,
           description,
-          coverType
+          coverType,
+          taglineNarrator
         }
       });
 

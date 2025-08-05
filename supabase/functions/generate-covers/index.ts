@@ -53,8 +53,8 @@ serve(async (req) => {
     console.log(`Authenticated user: ${userId}`);
 
     // Get request body
-    const { title, author, genre, style, description, coverType } = await req.json();
-    console.log(`Request from user ${userId} for: ${title} by ${author}, Cover Type: ${coverType}`);
+    const { title, author, genre, style, description, coverType, taglineNarrator } = await req.json();
+    console.log(`Request from user ${userId} for: ${title} by ${author}, Cover Type: ${coverType}, Extra: ${taglineNarrator}`);
 
     // Credit check temporarily disabled for testing
     // Get user profile and check credits - using maybeSingle to avoid errors
@@ -87,23 +87,35 @@ serve(async (req) => {
     // Generate AI images using Ideogram FIRST, then deduct credit
     console.log('Generating 4 covers with Ideogram...');
     
-    // Determine aspect ratio based on cover type
+    // Determine aspect ratio and text requirements based on cover type
     const aspectRatio = coverType === 'eBook Cover' ? 'ASPECT_2_3' : 'ASPECT_1_1';
     const aspectRatioText = coverType === 'eBook Cover' ? '2:3 aspect ratio' : '1:1 square aspect ratio';
     
+    // Create text requirements based on cover type
+    let textRequirements = '';
+    if (coverType === 'Album Cover') {
+      textRequirements = `REQUIRED TEXT: Album title "${title}" prominently at the top, artist name "${author}" clearly displayed below the title`;
+    } else if (coverType === 'Audiobook Cover') {
+      const narratorText = taglineNarrator ? `, narrated by "${taglineNarrator}"` : '';
+      textRequirements = `REQUIRED TEXT: Title "${title}" prominently at the top, author "${author}" clearly displayed${narratorText}, audiobook cover design`;
+    } else { // eBook Cover
+      const taglineText = taglineNarrator ? `, tagline "${taglineNarrator}"` : '';
+      textRequirements = `REQUIRED TEXT: Book title "${title}" prominently at the top, author name "${author}" clearly displayed${taglineText}`;
+    }
+    
     // Create detailed prompt for cover
-    const basePrompt = `Professional ${coverType.toLowerCase()} design for "${title}" by ${author}. ${genre} genre, ${style} style. ${description}. High quality, publishable cover with ONLY the exact title "${title}" and author name "${author}" as text, no other text or words, professional typography, cover layout, ${aspectRatioText}`;
+    const basePrompt = `Professional ${coverType.toLowerCase()} design. ${textRequirements}. ${genre} genre, ${style} style. Visual elements: ${description}. High quality, publishable cover with clear, readable typography, professional layout, ${aspectRatioText}. All text must be clearly visible and not cut off.`;
     
     console.log(`Generating 4 covers with base prompt: ${basePrompt}`);
 
     try {
-      // Generate 4 different covers with variations
+      // Generate 4 different covers with variations that emphasize text clarity
       const coverPromises = [];
       const variations = [
-        basePrompt + ", vibrant colors, dramatic lighting",
-        basePrompt + ", dark and moody atmosphere, shadows",
-        basePrompt + ", elegant and sophisticated design",
-        basePrompt + ", bold and eye-catching composition"
+        basePrompt + ", clean professional design with bold typography",
+        basePrompt + ", modern elegant design with clear readable text",
+        basePrompt + ", sophisticated layout with prominent title placement", 
+        basePrompt + ", eye-catching design with well-positioned text elements"
       ];
 
       for (let i = 0; i < 4; i++) {
