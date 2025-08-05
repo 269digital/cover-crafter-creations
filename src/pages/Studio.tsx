@@ -433,7 +433,7 @@ const Studio = () => {
               <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Important:</strong> Only upscaled book covers will be saved and downloadable in My Covers.
+                  <strong>Important:</strong> Only upscaled book covers will be saved and be downloadable in My Covers.
                 </AlertDescription>
               </Alert>
 
