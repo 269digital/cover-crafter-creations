@@ -140,11 +140,11 @@ serve(async (req) => {
 
     const imageBuffer = await imageResponse.arrayBuffer()
     console.log('Downloaded image size:', imageBuffer.byteLength, 'bytes')
-    const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
+    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
 
     // Create FormData for the upscale API
     const formData = new FormData()
-    formData.append('image_file', imageBlob, 'cover.png')
+    formData.append('image_file', imageBlob, 'cover.jpg')
     
     const imageRequest = {
       prompt: prompt || 'High quality book cover, sharp details, professional appearance',
