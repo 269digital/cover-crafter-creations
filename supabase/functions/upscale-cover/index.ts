@@ -92,10 +92,10 @@ serve(async (req) => {
 // Defer credits deduction until after successful task creation/upscale
 
 
-    // Use Freepik Magnific (Precision) Upscaler API
-    const freepikApiKey = Deno.env.get('FREEPIK_API_KEY')
-    if (!freepikApiKey) {
-      console.error('FREEPIK_API_KEY not found')
+    // Use Ideogram Upscale API
+    const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY')
+    if (!ideogramApiKey) {
+      console.error('IDEOGRAM_API_KEY not found')
       return new Response(
         JSON.stringify({ error: 'Server configuration error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -130,152 +130,53 @@ serve(async (req) => {
     const imageBuffer = await imageResponse.arrayBuffer()
     console.log('Downloaded image size:', imageBuffer.byteLength, 'bytes')
 
-    // Prepare JSON requests to Freepik Upscaler (prefer JSON body)
-    const endpoint = 'https://api.freepik.com/v1/ai/image-upscaler'
-    const headers = {
-      'x-freepik-api-key': freepikApiKey,
-      'content-type': 'application/json',
+    // Create multipart form data for Ideogram upscale API
+    console.log('Calling Ideogram Upscale API')
+    const formData = new FormData()
+    
+    // Add the image file
+    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
+    formData.append('image_file', imageBlob, 'image.jpg')
+    
+    // Add the image request parameters
+    const imageRequest = {
+      prompt: prompt || 'upscale this image',
+      magic_prompt_option: 'AUTO'
     }
+    formData.append('image_request', JSON.stringify(imageRequest))
 
-const tryCreateTask = async (): Promise<Response> => {
-  // Attempt 1: send URL in the required "image" field
-  let body: Record<string, unknown> = {
-    image: imageUrl,
-    scale: 2,
-    format: 'jpeg',
-    mode: 'magnific',
-  }
-  console.log('Creating Freepik task (image type): url')
-  let resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
-  if (resp.ok) return resp
+    const upscaleResponse = await fetch('https://api.ideogram.ai/upscale', {
+      method: 'POST',
+      headers: {
+        'Api-Key': ideogramApiKey,
+      },
+      body: formData
+    })
 
-  const txt1 = await resp.text()
-  const status1 = resp.status
-  console.error('Freepik create task attempt 1 failed:', status1, txt1)
-
-  // Compute base64 once for subsequent attempts
-  const bytes = new Uint8Array(imageBuffer)
-  const chunkSize = 0x8000
-  let binary = ''
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
-  }
-  const base64 = btoa(binary)
-  const dataUri = `data:image/jpeg;base64,${base64}`
-
-  // Attempt 2: data URI in "image"
-  body = { image: dataUri, scale: 2, format: 'jpeg', mode: 'magnific' }
-  console.log('Creating Freepik task (image type): data-uri')
-  resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
-  if (resp.ok) return resp
-
-  const txt2 = await resp.text()
-  const status2 = resp.status
-  console.error('Freepik create task attempt 2 failed:', status2, txt2)
-
-  // Attempt 3: raw base64 in "image"
-  body = { image: base64, scale: 2, format: 'jpeg', mode: 'magnific' }
-  console.log('Creating Freepik task (image type): base64')
-  resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
-  if (resp.ok) return resp
-
-  const txt3 = await resp.text()
-  const status3 = resp.status
-  console.error('Freepik create task attempt 3 failed:', status3, txt3)
-
-  const combined = `Attempt1(${status1}): ${txt1}\nAttempt2(${status2}): ${txt2}\nAttempt3(${status3}): ${txt3}`
-  return new Response(combined, { status: status3 || status2 || status1 })
-}
-
-    console.log('Calling Freepik Magnific Upscaler API with JSON payload')
-    const createTaskResp = await tryCreateTask()
-
-    if (!createTaskResp.ok) {
-      const errorText = await createTaskResp.text()
-      if (createTaskResp.status === 401 || createTaskResp.status === 403) {
-        console.error('Freepik auth error. Check FREEPIK_API_KEY and header format. Status:', createTaskResp.status, errorText)
-      } else {
-        console.error('Freepik create task error:', createTaskResp.status, errorText)
-      }
+    if (!upscaleResponse.ok) {
+      const errorText = await upscaleResponse.text()
+      console.error('Ideogram upscale error:', upscaleResponse.status, errorText)
       return new Response(
         JSON.stringify({ 
-          error: (createTaskResp.status === 401 || createTaskResp.status === 403)
-            ? 'Upscaler authentication failed with Freepik. Please verify the API key in Supabase secrets.'
-            : 'Failed to create upscaling task',
+          error: upscaleResponse.status === 401 || upscaleResponse.status === 403
+            ? 'Upscaler authentication failed with Ideogram. Please verify the API key in Supabase secrets.'
+            : 'Failed to upscale image',
           details: errorText,
-          status: createTaskResp.status
+          status: upscaleResponse.status
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const taskData = await createTaskResp.json()
-    console.log('Freepik create task response:', taskData)
+    const upscaleData = await upscaleResponse.json()
+    console.log('Ideogram upscale response:', upscaleData)
 
-// Try to extract immediate URL if provided (some responses might be synchronous)
-let upscaledImageUrl: string | undefined =
-  taskData?.result?.url || taskData?.data?.url || taskData?.url ||
-  taskData?.output?.url || taskData?.output?.[0]?.url ||
-  taskData?.result?.image_url || taskData?.data?.result?.url || taskData?.file_url
-
-// Otherwise, poll for task completion
-let taskId: string | undefined =
-  taskData?.id || taskData?.data?.id || taskData?.task_id || taskData?.taskId ||
-  taskData?.data?.task_id || taskData?.result?.task_id || taskData?.data?.result?.task_id
-
-if (!upscaledImageUrl && taskId) {
-  const statusUrls = [
-    `https://api.freepik.com/v1/ai/image-upscaler/${taskId}`,
-    `https://api.freepik.com/v1/ai/tasks/${taskId}`,
-    `https://api.freepik.com/v1/ai/image-upscaler/tasks/${taskId}`,
-  ]
-  console.log('Polling Freepik task status candidates:', statusUrls)
-
-  const wait = (ms: number) => new Promise((res) => setTimeout(res, ms))
-
-  let attempts = 0
-  const maxAttempts = 30 // up to ~60s with 2s backoff
-  while (attempts < maxAttempts && !upscaledImageUrl) {
-    attempts++
-
-    // Try all candidate URLs per attempt
-    for (const statusUrl of statusUrls) {
-      const statusResp = await fetch(statusUrl, {
-        method: 'GET',
-        headers: { 'x-freepik-api-key': freepikApiKey },
-      })
-      if (!statusResp.ok) {
-        const txt = await statusResp.text()
-        console.error(`Freepik status error (${statusUrl})`, statusResp.status, txt)
-        continue
-      }
-      const statusData = await statusResp.json()
-      const status = statusData?.status || statusData?.state || statusData?.data?.status || statusData?.data?.state
-      console.log(`Poll ${attempts} (${statusUrl}):`, statusData)
-
-      if (status && ['completed', 'succeeded', 'success', 'finished', 'done'].includes(String(status).toLowerCase())) {
-        upscaledImageUrl =
-          statusData?.result?.url || statusData?.data?.result?.url || statusData?.data?.url ||
-          statusData?.output?.url || statusData?.output?.[0]?.url ||
-          statusData?.result?.image_url || statusData?.file_url || statusData?.data?.file_url
-        break
-      }
-      if (status && ['failed', 'error'].includes(String(status).toLowerCase())) {
-        console.error('Upscaling task failed:', statusData)
-        return new Response(
-          JSON.stringify({ error: 'Upscaling failed', details: statusData }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    }
-
-    if (!upscaledImageUrl) await wait(2000)
-  }
-}
+    // Extract the upscaled image URL from Ideogram's response
+    const upscaledImageUrl = upscaleData?.data?.[0]?.url || upscaleData?.url || upscaleData?.image_url
 
 
     if (!upscaledImageUrl) {
-      console.error('No upscaled image URL received from Freepik API')
+      console.error('No upscaled image URL received from Ideogram API')
       return new Response(
         JSON.stringify({ error: 'Failed to get upscaled image URL' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
