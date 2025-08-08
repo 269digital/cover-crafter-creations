@@ -25,6 +25,7 @@ const Studio = () => {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
+  const [narratedBy, setNarratedBy] = useState("");
   const [coverType, setCoverType] = useState<string>("eBook Cover");
   const [generating, setGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
@@ -108,7 +109,8 @@ const Studio = () => {
           description,
           tagline: "",
           aspectRatio,
-          coverType
+          coverType,
+          narratedBy
         }
       });
 
@@ -226,7 +228,7 @@ const Studio = () => {
         const { data, error } = await supabase.functions.invoke('upscale-cover', {
         body: { 
           imageUrl: imageInfo.url,
-          prompt: `High quality ${genre} ${coverType === "Album Cover" ? "album cover" : coverType === "Audiobook Cover" ? "audiobook cover" : "book cover"} for "${title}", ${style} style, sharp details, professional appearance`,
+          prompt: `High quality ${genre} ${coverType === "Album Cover" ? "album cover" : coverType === "Audiobook Cover" ? "audiobook cover" : "book cover"} for "${title}", ${style} style, sharp details, professional appearance${coverType === "Audiobook Cover" && narratedBy ? `, include the text "Narrated by ${narratedBy}"` : ""}`,
           aspectRatio
         }
       });
@@ -386,7 +388,7 @@ const Studio = () => {
               {/* Cover Type Selection */}
               <div className="space-y-2">
                 <Label htmlFor="coverType">Cover Type</Label>
-                <Select value={coverType} onValueChange={(v) => { setCoverType(v); setGenre(""); }}>
+                <Select value={coverType} onValueChange={(v) => { setCoverType(v); setGenre(""); setNarratedBy(""); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select cover type" />
                   </SelectTrigger>
@@ -434,10 +436,10 @@ const Studio = () => {
 
               {/* Title Field */}
               <div className="space-y-2">
-                <Label htmlFor="title">{coverType === "Album Cover" ? "Album Title" : "Book Title"}</Label>
+                <Label htmlFor="title">{coverType === "Album Cover" ? "Album Title" : coverType === "Audiobook Cover" ? "Audiobook Title" : "Book Title"}</Label>
                 <Input
                   id="title"
-                  placeholder={coverType === "Album Cover" ? "Enter album title" : "Enter your book title"}
+                  placeholder={coverType === "Album Cover" ? "Enter album title" : coverType === "Audiobook Cover" ? "Enter your audiobook title" : "Enter your book title"}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
@@ -452,6 +454,17 @@ const Studio = () => {
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
                 />
+                {coverType === "Audiobook Cover" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="narratedBy">Narrated by</Label>
+                    <Input
+                      id="narratedBy"
+                      placeholder="Enter narrator name (optional)"
+                      value={narratedBy}
+                      onChange={(e) => setNarratedBy(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Description */}
@@ -459,7 +472,7 @@ const Studio = () => {
                 <Label htmlFor="description">Describe the Cover Art</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe the visual elements you want on your book cover (e.g., dark forest, mystical creatures, ancient castle...)"
+                  placeholder={coverType === "Album Cover" ? "Describe the visual elements you want on your album cover (e.g., band performance, abstract art, iconic symbol...)" : coverType === "Audiobook Cover" ? "Describe the visual elements you want on your audiobook cover (e.g., narrator theme, story mood, symbolic imagery...)" : "Describe the visual elements you want on your book cover (e.g., dark forest, mystical creatures, ancient castle...)"}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}

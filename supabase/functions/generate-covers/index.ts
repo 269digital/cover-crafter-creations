@@ -86,7 +86,7 @@ serve(async (req) => {
     }
 
     console.log("Step 5: Parsing request body");
-    const { title, author, genre, style, description, tagline, aspectRatio, coverType } = await req.json();
+    const { title, author, genre, style, description, tagline, aspectRatio, coverType, narratedBy } = await req.json();
     
     console.log("Generating covers for user:", userId, "- Book:", { title, author, genre, style });
 
@@ -142,7 +142,7 @@ serve(async (req) => {
 
     // Build dynamic prompt based on cover type
     const buildPrompt = (bookData: any, coverTypeVal?: string) => {
-      const { title, author, genre, style, description, tagline } = bookData;
+      const { title, author, genre, style, description, tagline, narratedBy } = bookData;
       const designLabel = coverTypeVal === 'Album Cover' ? 'album cover' : coverTypeVal === 'Audiobook Cover' ? 'audiobook cover' : 'book cover';
       
       let prompt = `Professional ${designLabel} design for "${title}" by ${author}. `;
@@ -157,12 +157,15 @@ serve(async (req) => {
       }
       
       prompt += `Create an eye-catching, professional ${designLabel} with the title and author name prominently displayed. `;
+      if (coverTypeVal === 'Audiobook Cover' && narratedBy) {
+        prompt += `Include the text: "Narrated by ${narratedBy}" on the cover. `;
+      }
       prompt += `High-quality, commercial ${designLabel} design, clean typography, professional layout, suitable for ${genre} genre with ${style} aesthetic.`;
       
       return prompt;
     };
 
-    const prompt = buildPrompt({ title, author, genre, style, description, tagline }, coverType);
+    const prompt = buildPrompt({ title, author, genre, style, description, tagline, narratedBy }, coverType);
     console.log("Generated prompt:", prompt);
 
     // Call Ideogram API
