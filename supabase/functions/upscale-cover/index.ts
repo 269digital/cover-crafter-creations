@@ -140,24 +140,65 @@ serve(async (req) => {
 
     const imageBuffer = await imageResponse.arrayBuffer()
     console.log('Downloaded image size:', imageBuffer.byteLength, 'bytes')
-    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
 
-    // Create FormData for the Freepik upscaler API (2x, JPEG)
-    const formData = new FormData()
-    formData.append('image', imageBlob, 'cover.jpg')
-    formData.append('scale', '2')
-    formData.append('format', 'jpeg')
-    formData.append('mode', 'magnific')
+    // Prepare JSON requests to Freepik Upscaler (prefer JSON body)
+    const endpoint = 'https://api.freepik.com/v1/ai/image-upscaler'
+    const headers = {
+      'x-freepik-api-key': freepikApiKey,
+      'content-type': 'application/json',
+    }
 
-    // Call Freepik Magnific Upscaler API
-    console.log('Calling Freepik Magnific Upscaler API with image file')
-    const createTaskResp = await fetch('https://api.freepik.com/v1/ai/image-upscaler', {
-      method: 'POST',
-      headers: {
-        'x-freepik-api-key': freepikApiKey,
-      },
-      body: formData,
-    })
+    const tryCreateTask = async (): Promise<Response> => {
+      // Attempt 1: image_url
+      let body: Record<string, unknown> = {
+        image_url: imageUrl,
+        scale: 2,
+        format: 'jpeg',
+        mode: 'magnific',
+      }
+      console.log('Creating Freepik task (payload keys):', Object.keys(body))
+      let resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
+      if (resp.ok) return resp
+
+      const txt1 = await resp.text()
+      const status1 = resp.status
+      console.error('Freepik create task attempt 1 failed:', status1, txt1)
+
+      // Attempt 2: url
+      body = { url: imageUrl, scale: 2, format: 'jpeg', mode: 'magnific' }
+      console.log('Creating Freepik task (payload keys):', Object.keys(body))
+      resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
+      if (resp.ok) return resp
+
+      const txt2 = await resp.text()
+      const status2 = resp.status
+      console.error('Freepik create task attempt 2 failed:', status2, txt2)
+
+      // Attempt 3: base64 data URI
+      const bytes = new Uint8Array(imageBuffer)
+      const chunkSize = 0x8000
+      let binary = ''
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+      }
+      const base64 = btoa(binary)
+      const dataUri = `data:image/jpeg;base64,${base64}`
+
+      body = { image_base64: dataUri, scale: 2, format: 'jpeg', mode: 'magnific' }
+      console.log('Creating Freepik task (payload keys):', Object.keys(body))
+      resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
+      if (resp.ok) return resp
+
+      const txt3 = await resp.text()
+      const status3 = resp.status
+      console.error('Freepik create task attempt 3 failed:', status3, txt3)
+
+      const combined = `Attempt1(${status1}): ${txt1}\nAttempt2(${status2}): ${txt2}\nAttempt3(${status3}): ${txt3}`
+      return new Response(combined, { status: status3 || status2 || status1 })
+    }
+
+    console.log('Calling Freepik Magnific Upscaler API with JSON payload')
+    const createTaskResp = await tryCreateTask()
 
     if (!createTaskResp.ok) {
       const errorText = await createTaskResp.text()
