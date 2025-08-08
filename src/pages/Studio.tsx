@@ -228,7 +228,7 @@ const Studio = () => {
         const { data, error } = await supabase.functions.invoke('upscale-cover', {
         body: { 
           imageUrl: imageInfo.url,
-          prompt: `High quality ${genre} ${coverType === "Album Cover" ? "album cover" : coverType === "Audiobook Cover" ? "audiobook cover" : "book cover"} for "${title}", ${style} style, sharp details, professional appearance${coverType === "Audiobook Cover" && narratedBy ? `, include the text "Narrated by ${narratedBy}"` : ""}`,
+          prompt: `High quality ${genre} ${coverType === "Album Cover" ? "album cover" : coverType === "Audiobook Cover" ? "audiobook cover" : "book cover"} for "${title}" by ${author}, ${style} style, sharp details, professional appearance${coverType === "Album Cover" ? `, include the exact text "${title}" and "${author}" on the image as title and artist, spelled exactly, clearly readable, no extra words` : ""}${coverType === "Audiobook Cover" && narratedBy ? `, include the text "Narrated by ${narratedBy}"` : ""}`,
           aspectRatio
         }
       });

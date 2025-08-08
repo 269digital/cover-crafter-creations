@@ -156,7 +156,11 @@ serve(async (req) => {
         prompt += `Tagline: "${tagline}". `;
       }
       
-      prompt += `Create an eye-catching, professional ${designLabel} with the title and author name prominently displayed. `;
+      if (coverTypeVal === 'Album Cover') {
+        prompt += `Add the exact text on the image: Title: "${title}" and Artist: "${author}". Spell them exactly as provided, place prominently with clean, legible typography. Do not omit, paraphrase, or add extra words. Ensure high contrast and readability. `;
+      } else {
+        prompt += `Create an eye-catching, professional ${designLabel} with the title and author name prominently displayed. `;
+      }
       if (coverTypeVal === 'Audiobook Cover' && narratedBy) {
         prompt += `Include the text: "Narrated by ${narratedBy}" on the cover. `;
       }
