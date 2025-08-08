@@ -154,18 +154,25 @@ serve(async (req) => {
     const createTaskResp = await fetch('https://api.freepik.com/v1/image-upscaler', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${freepikApiKey}`,
+        'X-Freepik-API-Key': freepikApiKey,
       },
       body: formData,
     })
 
     if (!createTaskResp.ok) {
       const errorText = await createTaskResp.text()
-      console.error('Freepik create task error:', createTaskResp.status, errorText)
+      if (createTaskResp.status === 401 || createTaskResp.status === 403) {
+        console.error('Freepik auth error. Check FREEPIK_API_KEY and header format. Status:', createTaskResp.status, errorText)
+      } else {
+        console.error('Freepik create task error:', createTaskResp.status, errorText)
+      }
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to create upscaling task',
-          details: errorText
+          error: (createTaskResp.status === 401 || createTaskResp.status === 403)
+            ? 'Upscaler authentication failed with Freepik. Please verify the API key in Supabase secrets.'
+            : 'Failed to create upscaling task',
+          details: errorText,
+          status: createTaskResp.status
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -193,11 +200,15 @@ serve(async (req) => {
         attempts++
         const statusResp = await fetch(statusUrl, {
           method: 'GET',
-          headers: { 'Authorization': `Bearer ${freepikApiKey}` },
+          headers: { 'X-Freepik-API-Key': freepikApiKey },
         })
         if (!statusResp.ok) {
           const txt = await statusResp.text()
-          console.error('Freepik status error:', statusResp.status, txt)
+          if (statusResp.status === 401 || statusResp.status === 403) {
+            console.error('Freepik status auth error. Check FREEPIK_API_KEY header. Status:', statusResp.status, txt)
+          } else {
+            console.error('Freepik status error:', statusResp.status, txt)
+          }
           break
         }
         const statusData = await statusResp.json()
