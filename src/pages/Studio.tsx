@@ -367,6 +367,21 @@ const Studio = () => {
             </CardHeader>
             <CardContent className="space-y-6">
 
+              {/* Cover Type Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="coverType">Cover Type</Label>
+                <Select value={coverType} onValueChange={setCoverType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select cover type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="eBook Cover">eBook Cover (2:3)</SelectItem>
+                    <SelectItem value="Album Cover">Album Cover (1:1)</SelectItem>
+                    <SelectItem value="Audiobook Cover">Audiobook Cover (1:1)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Genre Selection */}
               <div className="space-y-2">
                 <Label htmlFor="genre">Select Genre</Label>
@@ -397,21 +412,6 @@ const Studio = () => {
                         {s}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Cover Type Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="coverType">Cover Type</Label>
-                <Select value={coverType} onValueChange={setCoverType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select cover type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="eBook Cover">eBook Cover (2:3)</SelectItem>
-                    <SelectItem value="Album Cover">Album Cover (1:1)</SelectItem>
-                    <SelectItem value="Audiobook Cover">Audiobook Cover (1:1)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
