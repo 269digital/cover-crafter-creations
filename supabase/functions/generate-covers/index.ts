@@ -86,7 +86,7 @@ serve(async (req) => {
     }
 
     console.log("Step 5: Parsing request body");
-    const { title, author, genre, style, description, tagline } = await req.json();
+    const { title, author, genre, style, description, tagline, aspectRatio } = await req.json();
     
     console.log("Generating covers for user:", userId, "- Book:", { title, author, genre, style });
 
@@ -170,7 +170,7 @@ serve(async (req) => {
       image_request: {
         prompt: prompt,
         num_images: 4,
-        aspect_ratio: 'ASPECT_2_3'
+        aspect_ratio: (aspectRatio === 'ASPECT_1_1' || aspectRatio === 'ASPECT_2_3') ? aspectRatio : 'ASPECT_2_3'
       }
     };
 

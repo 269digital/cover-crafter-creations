@@ -25,6 +25,7 @@ const Studio = () => {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
+  const [coverType, setCoverType] = useState<string>("eBook Cover");
   const [generating, setGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [imageData, setImageData] = useState<Array<{
@@ -33,6 +34,9 @@ const Studio = () => {
     isUpscaled: boolean;
     isUpscaling: boolean;
   }>>([]);
+
+  const aspectRatio = coverType === "eBook Cover" ? "ASPECT_2_3" : "ASPECT_1_1";
+  const aspectClass = coverType === "eBook Cover" ? "aspect-[2/3]" : "aspect-square";
 
   const genres = [
     "Thriller",
@@ -87,7 +91,8 @@ const Studio = () => {
           genre,
           style,
           description,
-          tagline: ""
+          tagline: "",
+          aspectRatio
         }
       });
 
@@ -120,7 +125,7 @@ const Studio = () => {
               image_url2: imageUrls[1] || null,
               image_url3: imageUrls[2] || null,
               image_url4: imageUrls[3] || null,
-              cover_type: 'eBook Cover'
+              cover_type: coverType
             });
           
           if (saveError) {
@@ -205,7 +210,8 @@ const Studio = () => {
         const { data, error } = await supabase.functions.invoke('upscale-cover', {
         body: { 
           imageUrl: imageInfo.url,
-          prompt: `High quality ${genre} book cover for "${title}", ${style} style, sharp details, professional appearance`
+          prompt: `High quality ${genre} book cover for "${title}", ${style} style, sharp details, professional appearance`,
+          aspectRatio
         }
       });
 
@@ -395,6 +401,21 @@ const Studio = () => {
                 </Select>
               </div>
 
+              {/* Cover Type Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="coverType">Cover Type</Label>
+                <Select value={coverType} onValueChange={setCoverType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select cover type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="eBook Cover">eBook Cover (2:3)</SelectItem>
+                    <SelectItem value="Album Cover">Album Cover (1:1)</SelectItem>
+                    <SelectItem value="Audiobook Cover">Audiobook Cover (1:1)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Title Field */}
               <div className="space-y-2">
                 <Label htmlFor="title">Book Title</Label>
@@ -464,7 +485,7 @@ const Studio = () => {
                         <img 
                           src={image.url} 
                           alt={`Generated cover ${index + 1}`}
-                          className="aspect-[2/3] w-full object-cover rounded-lg shadow-sm"
+                          className={`${aspectClass} w-full object-cover rounded-lg shadow-sm`}
                         />
                         {image.isUpscaled && (
                           <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
@@ -557,7 +578,7 @@ const Studio = () => {
                     {[1, 2, 3, 4].map((i) => (
                       <div 
                         key={i} 
-                        className="aspect-[2/3] bg-muted rounded-lg flex items-center justify-center text-muted-foreground"
+                        className={`${aspectClass} bg-muted rounded-lg flex items-center justify-center text-muted-foreground`}
                       >
                         Cover {i}
                       </div>

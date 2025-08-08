@@ -55,7 +55,7 @@ serve(async (req) => {
     const user = userData.user
     console.log('Authenticated user:', user.id)
 
-    const { imageUrl, prompt } = await req.json()
+    const { imageUrl, prompt, aspectRatio } = await req.json()
     console.log('Received upscale request with imageUrl:', imageUrl)
 
     if (!imageUrl) {
@@ -146,10 +146,13 @@ serve(async (req) => {
     const formData = new FormData()
     formData.append('image_file', imageBlob, 'cover.jpg')
     
+    const safeAspect = (aspectRatio === 'ASPECT_1_1' || aspectRatio === 'ASPECT_2_3') ? aspectRatio : 'ASPECT_2_3'
+    const resolution = safeAspect === 'ASPECT_1_1' ? 'RESOLUTION_1024_1024' : 'RESOLUTION_1024_1536'
+
     const imageRequest = {
-      prompt: prompt || 'High quality book cover, sharp details, professional appearance',
-      resolution: 'RESOLUTION_1024_1024',
-      aspect_ratio: 'ASPECT_2_3'
+      prompt: prompt || 'High quality cover, sharp details, professional appearance',
+      resolution,
+      aspect_ratio: safeAspect
     }
     formData.append('image_request', JSON.stringify(imageRequest))
 

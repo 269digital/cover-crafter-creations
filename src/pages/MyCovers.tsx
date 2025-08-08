@@ -18,6 +18,7 @@ interface Creation {
   image_url4: string | null;
   created_at: string;
   upscaled_image_url: string | null; // Permanently stored upscaled image
+  cover_type?: string;
   ideogram_id?: string; // Store the Ideogram image ID for remixing
 }
 
@@ -188,7 +189,7 @@ const MyCovers = () => {
               
               return (
                 <Card key={creation.id} className="group hover:shadow-lg transition-shadow">
-                  <div className="aspect-[2/3] relative overflow-hidden rounded-t-lg">
+                  <div className={`${creation.cover_type && creation.cover_type !== 'eBook Cover' ? 'aspect-square' : 'aspect-[2/3]'} relative overflow-hidden rounded-t-lg`}>
                     <img
                       src={upscaledImageUrl}
                       alt="Upscaled book cover"
