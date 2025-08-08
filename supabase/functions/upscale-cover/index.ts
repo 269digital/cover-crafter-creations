@@ -212,54 +212,67 @@ const tryCreateTask = async (): Promise<Response> => {
     const taskData = await createTaskResp.json()
     console.log('Freepik create task response:', taskData)
 
-    // Try to extract immediate URL if provided (some responses might be synchronous)
-    let upscaledImageUrl: string | undefined =
-      taskData?.result?.url || taskData?.data?.url || taskData?.url
+// Try to extract immediate URL if provided (some responses might be synchronous)
+let upscaledImageUrl: string | undefined =
+  taskData?.result?.url || taskData?.data?.url || taskData?.url ||
+  taskData?.output?.url || taskData?.output?.[0]?.url ||
+  taskData?.result?.image_url || taskData?.data?.result?.url || taskData?.file_url
 
-    // Otherwise, poll for task completion
-    let taskId: string | undefined = taskData?.id || taskData?.data?.id || taskData?.task_id || taskData?.taskId
+// Otherwise, poll for task completion
+let taskId: string | undefined =
+  taskData?.id || taskData?.data?.id || taskData?.task_id || taskData?.taskId ||
+  taskData?.data?.task_id || taskData?.result?.task_id || taskData?.data?.result?.task_id
 
-    if (!upscaledImageUrl && taskId) {
-      const statusUrl = `https://api.freepik.com/v1/ai/image-upscaler/${taskId}`
-      console.log('Polling Freepik task status at:', statusUrl)
+if (!upscaledImageUrl && taskId) {
+  const statusUrls = [
+    `https://api.freepik.com/v1/ai/image-upscaler/${taskId}`,
+    `https://api.freepik.com/v1/ai/tasks/${taskId}`,
+    `https://api.freepik.com/v1/ai/image-upscaler/tasks/${taskId}`,
+  ]
+  console.log('Polling Freepik task status candidates:', statusUrls)
 
-      const wait = (ms: number) => new Promise((res) => setTimeout(res, ms))
+  const wait = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
-      let attempts = 0
-      const maxAttempts = 30 // up to ~60s with 2s backoff
-      while (attempts < maxAttempts) {
-        attempts++
-        const statusResp = await fetch(statusUrl, {
-          method: 'GET',
-          headers: { 'x-freepik-api-key': freepikApiKey },
-        })
-        if (!statusResp.ok) {
-          const txt = await statusResp.text()
-          if (statusResp.status === 401 || statusResp.status === 403) {
-            console.error('Freepik status auth error. Check FREEPIK_API_KEY header. Status:', statusResp.status, txt)
-          } else {
-            console.error('Freepik status error:', statusResp.status, txt)
-          }
-          break
-        }
-        const statusData = await statusResp.json()
-        const status = statusData?.status || statusData?.state || statusData?.data?.status
-        console.log(`Poll ${attempts}:`, statusData)
+  let attempts = 0
+  const maxAttempts = 30 // up to ~60s with 2s backoff
+  while (attempts < maxAttempts && !upscaledImageUrl) {
+    attempts++
 
-        if (status && ['completed', 'succeeded', 'success', 'finished'].includes(String(status).toLowerCase())) {
-          upscaledImageUrl = statusData?.result?.url || statusData?.data?.result?.url || statusData?.data?.url || statusData?.output?.url
-          break
-        }
-        if (status && ['failed', 'error'].includes(String(status).toLowerCase())) {
-          console.error('Upscaling task failed:', statusData)
-          return new Response(
-            JSON.stringify({ error: 'Upscaling failed', details: statusData }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-        await wait(2000)
+    // Try all candidate URLs per attempt
+    for (const statusUrl of statusUrls) {
+      const statusResp = await fetch(statusUrl, {
+        method: 'GET',
+        headers: { 'x-freepik-api-key': freepikApiKey },
+      })
+      if (!statusResp.ok) {
+        const txt = await statusResp.text()
+        console.error(`Freepik status error (${statusUrl})`, statusResp.status, txt)
+        continue
+      }
+      const statusData = await statusResp.json()
+      const status = statusData?.status || statusData?.state || statusData?.data?.status || statusData?.data?.state
+      console.log(`Poll ${attempts} (${statusUrl}):`, statusData)
+
+      if (status && ['completed', 'succeeded', 'success', 'finished', 'done'].includes(String(status).toLowerCase())) {
+        upscaledImageUrl =
+          statusData?.result?.url || statusData?.data?.result?.url || statusData?.data?.url ||
+          statusData?.output?.url || statusData?.output?.[0]?.url ||
+          statusData?.result?.image_url || statusData?.file_url || statusData?.data?.file_url
+        break
+      }
+      if (status && ['failed', 'error'].includes(String(status).toLowerCase())) {
+        console.error('Upscaling task failed:', statusData)
+        return new Response(
+          JSON.stringify({ error: 'Upscaling failed', details: statusData }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
       }
     }
+
+    if (!upscaledImageUrl) await wait(2000)
+  }
+}
+
 
     if (!upscaledImageUrl) {
       console.error('No upscaled image URL received from Freepik API')
