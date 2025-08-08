@@ -151,10 +151,10 @@ serve(async (req) => {
 
     // Call Freepik Magnific Upscaler API
     console.log('Calling Freepik Magnific Upscaler API with image file')
-    const createTaskResp = await fetch('https://api.freepik.com/v1/image-upscaler', {
+    const createTaskResp = await fetch('https://api.freepik.com/v1/ai/image-upscaler', {
       method: 'POST',
       headers: {
-        'X-Freepik-API-Key': freepikApiKey,
+        'x-freepik-api-key': freepikApiKey,
       },
       body: formData,
     })
@@ -189,7 +189,7 @@ serve(async (req) => {
     let taskId: string | undefined = taskData?.id || taskData?.data?.id || taskData?.task_id || taskData?.taskId
 
     if (!upscaledImageUrl && taskId) {
-      const statusUrl = `https://api.freepik.com/v1/image-upscaler/${taskId}`
+      const statusUrl = `https://api.freepik.com/v1/ai/image-upscaler/${taskId}`
       console.log('Polling Freepik task status at:', statusUrl)
 
       const wait = (ms: number) => new Promise((res) => setTimeout(res, ms))
@@ -200,7 +200,7 @@ serve(async (req) => {
         attempts++
         const statusResp = await fetch(statusUrl, {
           method: 'GET',
-          headers: { 'X-Freepik-API-Key': freepikApiKey },
+          headers: { 'x-freepik-api-key': freepikApiKey },
         })
         if (!statusResp.ok) {
           const txt = await statusResp.text()
