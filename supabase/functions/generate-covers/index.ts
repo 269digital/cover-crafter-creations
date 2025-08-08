@@ -86,7 +86,7 @@ serve(async (req) => {
     }
 
     console.log("Step 5: Parsing request body");
-    const { title, author, genre, style, description, tagline, aspectRatio } = await req.json();
+    const { title, author, genre, style, description, tagline, aspectRatio, coverType } = await req.json();
     
     console.log("Generating covers for user:", userId, "- Book:", { title, author, genre, style });
 
@@ -140,11 +140,12 @@ serve(async (req) => {
       });
     }
 
-    // Build dynamic prompt for book cover
-    const buildPrompt = (bookData: any) => {
+    // Build dynamic prompt based on cover type
+    const buildPrompt = (bookData: any, coverTypeVal?: string) => {
       const { title, author, genre, style, description, tagline } = bookData;
+      const designLabel = coverTypeVal === 'Album Cover' ? 'album cover' : coverTypeVal === 'Audiobook Cover' ? 'audiobook cover' : 'book cover';
       
-      let prompt = `Professional book cover design for "${title}" by ${author}. `;
+      let prompt = `Professional ${designLabel} design for "${title}" by ${author}. `;
       prompt += `Genre: ${genre}. Style: ${style}. `;
       
       if (description) {
@@ -155,14 +156,13 @@ serve(async (req) => {
         prompt += `Tagline: "${tagline}". `;
       }
       
-      prompt += `Create an eye-catching, professional book cover with the title and author name prominently displayed. `;
-      prompt += `High-quality, commercial book cover design, clean typography, professional layout, `;
-      prompt += `suitable for ${genre} genre with ${style} aesthetic.`;
+      prompt += `Create an eye-catching, professional ${designLabel} with the title and author name prominently displayed. `;
+      prompt += `High-quality, commercial ${designLabel} design, clean typography, professional layout, suitable for ${genre} genre with ${style} aesthetic.`;
       
       return prompt;
     };
 
-    const prompt = buildPrompt({ title, author, genre, style, description, tagline });
+    const prompt = buildPrompt({ title, author, genre, style, description, tagline }, coverType);
     console.log("Generated prompt:", prompt);
 
     // Call Ideogram API

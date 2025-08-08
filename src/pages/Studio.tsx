@@ -107,7 +107,8 @@ const Studio = () => {
           style,
           description,
           tagline: "",
-          aspectRatio
+          aspectRatio,
+          coverType
         }
       });
 
@@ -225,7 +226,7 @@ const Studio = () => {
         const { data, error } = await supabase.functions.invoke('upscale-cover', {
         body: { 
           imageUrl: imageInfo.url,
-          prompt: `High quality ${genre} book cover for "${title}", ${style} style, sharp details, professional appearance`,
+          prompt: `High quality ${genre} ${coverType === "Album Cover" ? "album cover" : coverType === "Audiobook Cover" ? "audiobook cover" : "book cover"} for "${title}", ${style} style, sharp details, professional appearance`,
           aspectRatio
         }
       });
