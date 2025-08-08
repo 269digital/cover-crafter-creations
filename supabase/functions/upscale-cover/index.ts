@@ -89,19 +89,8 @@ serve(async (req) => {
       )
     }
 
-    // Deduct 2 credits
-    const { error: updateError } = await supabaseClient
-      .from('profiles')
-      .update({ credits: profile.credits - 2 })
-      .eq('user_id', user.id)
+// Defer credits deduction until after successful task creation/upscale
 
-    if (updateError) {
-      console.error('Error updating credits:', updateError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to process credits' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     // Use Freepik Magnific (Precision) Upscaler API
     const freepikApiKey = Deno.env.get('FREEPIK_API_KEY')
@@ -148,54 +137,55 @@ serve(async (req) => {
       'content-type': 'application/json',
     }
 
-    const tryCreateTask = async (): Promise<Response> => {
-      // Attempt 1: image_url
-      let body: Record<string, unknown> = {
-        image_url: imageUrl,
-        scale: 2,
-        format: 'jpeg',
-        mode: 'magnific',
-      }
-      console.log('Creating Freepik task (payload keys):', Object.keys(body))
-      let resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
-      if (resp.ok) return resp
+const tryCreateTask = async (): Promise<Response> => {
+  // Attempt 1: send URL in the required "image" field
+  let body: Record<string, unknown> = {
+    image: imageUrl,
+    scale: 2,
+    format: 'jpeg',
+    mode: 'magnific',
+  }
+  console.log('Creating Freepik task (image type): url')
+  let resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
+  if (resp.ok) return resp
 
-      const txt1 = await resp.text()
-      const status1 = resp.status
-      console.error('Freepik create task attempt 1 failed:', status1, txt1)
+  const txt1 = await resp.text()
+  const status1 = resp.status
+  console.error('Freepik create task attempt 1 failed:', status1, txt1)
 
-      // Attempt 2: url
-      body = { url: imageUrl, scale: 2, format: 'jpeg', mode: 'magnific' }
-      console.log('Creating Freepik task (payload keys):', Object.keys(body))
-      resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
-      if (resp.ok) return resp
+  // Compute base64 once for subsequent attempts
+  const bytes = new Uint8Array(imageBuffer)
+  const chunkSize = 0x8000
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+  }
+  const base64 = btoa(binary)
+  const dataUri = `data:image/jpeg;base64,${base64}`
 
-      const txt2 = await resp.text()
-      const status2 = resp.status
-      console.error('Freepik create task attempt 2 failed:', status2, txt2)
+  // Attempt 2: data URI in "image"
+  body = { image: dataUri, scale: 2, format: 'jpeg', mode: 'magnific' }
+  console.log('Creating Freepik task (image type): data-uri')
+  resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
+  if (resp.ok) return resp
 
-      // Attempt 3: base64 data URI
-      const bytes = new Uint8Array(imageBuffer)
-      const chunkSize = 0x8000
-      let binary = ''
-      for (let i = 0; i < bytes.length; i += chunkSize) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
-      }
-      const base64 = btoa(binary)
-      const dataUri = `data:image/jpeg;base64,${base64}`
+  const txt2 = await resp.text()
+  const status2 = resp.status
+  console.error('Freepik create task attempt 2 failed:', status2, txt2)
 
-      body = { image_base64: dataUri, scale: 2, format: 'jpeg', mode: 'magnific' }
-      console.log('Creating Freepik task (payload keys):', Object.keys(body))
-      resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
-      if (resp.ok) return resp
+  // Attempt 3: raw base64 in "image"
+  body = { image: base64, scale: 2, format: 'jpeg', mode: 'magnific' }
+  console.log('Creating Freepik task (image type): base64')
+  resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) })
+  if (resp.ok) return resp
 
-      const txt3 = await resp.text()
-      const status3 = resp.status
-      console.error('Freepik create task attempt 3 failed:', status3, txt3)
+  const txt3 = await resp.text()
+  const status3 = resp.status
+  console.error('Freepik create task attempt 3 failed:', status3, txt3)
 
-      const combined = `Attempt1(${status1}): ${txt1}\nAttempt2(${status2}): ${txt2}\nAttempt3(${status3}): ${txt3}`
-      return new Response(combined, { status: status3 || status2 || status1 })
-    }
+  const combined = `Attempt1(${status1}): ${txt1}\nAttempt2(${status2}): ${txt2}\nAttempt3(${status3}): ${txt3}`
+  return new Response(combined, { status: status3 || status2 || status1 })
+}
 
     console.log('Calling Freepik Magnific Upscaler API with JSON payload')
     const createTaskResp = await tryCreateTask()
@@ -352,19 +342,34 @@ serve(async (req) => {
       }
     }
 
-    // Start background task (don't await)
-    EdgeRuntime.waitUntil(storeImageTask())
+// Deduct 2 credits now that the task succeeded and we have a URL
+const newCredits = (profile.credits ?? 0) - 2
+const { error: lateUpdateError } = await supabaseClient
+  .from('profiles')
+  .update({ credits: newCredits })
+  .eq('user_id', user.id)
 
-    // Return immediate response with temporary upscaled image
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        upscaledImage: upscaledImageUrl,
-        message: "Image upscaled successfully! It will be permanently saved to your collection shortly.",
-        creditsRemaining: profile.credits - 2
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+if (lateUpdateError) {
+  console.error('Error updating credits after upscaling:', lateUpdateError)
+  return new Response(
+    JSON.stringify({ error: 'Failed to process credits after upscaling' }),
+    { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+// Start background task (don't await)
+EdgeRuntime.waitUntil(storeImageTask())
+
+// Return immediate response with temporary upscaled image
+return new Response(
+  JSON.stringify({ 
+    success: true,
+    upscaledImage: upscaledImageUrl,
+    message: "Image upscaled successfully! It will be permanently saved to your collection shortly.",
+    creditsRemaining: newCredits
+  }),
+  { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+)
 
   } catch (error) {
     console.error('Error in upscale-cover function:', error)
