@@ -38,9 +38,9 @@ const Studio = () => {
   const aspectRatio = coverType === "eBook Cover" ? "ASPECT_2_3" : "ASPECT_1_1";
   const aspectClass = coverType === "eBook Cover" ? "aspect-[2/3]" : "aspect-square";
 
-  const genres = [
+  const bookGenres = [
     "Thriller",
-    "Romance", 
+    "Romance",
     "Sci-Fi",
     "Fantasy",
     "Mystery",
@@ -50,6 +50,21 @@ const Studio = () => {
     "Historical Fiction",
     "Non-Fiction"
   ];
+
+  const albumGenres = [
+    "Popular & Contemporary",
+    "Rock & Alternative",
+    "Folk & Traditional",
+    "Jazz & Related Styles",
+    "Dance & Electronic",
+    "Classical & New Age",
+    "Religious & Spiritual",
+    "Reggae & Caribbean",
+    "Country & Americana",
+    "Latin & World"
+  ];
+
+  const genres = coverType === "Album Cover" ? albumGenres : bookGenres;
 
   const styles = [
     "Realistic",
@@ -370,7 +385,7 @@ const Studio = () => {
               {/* Cover Type Selection */}
               <div className="space-y-2">
                 <Label htmlFor="coverType">Cover Type</Label>
-                <Select value={coverType} onValueChange={setCoverType}>
+                <Select value={coverType} onValueChange={(v) => { setCoverType(v); setGenre(""); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select cover type" />
                   </SelectTrigger>
