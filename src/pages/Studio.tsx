@@ -353,7 +353,7 @@ const Studio = () => {
             <CardHeader className="text-center">
               <CardTitle className="text-2xl flex items-center justify-center gap-2">
                 <Sparkles className="h-6 w-6 text-primary" />
-                Create Your Book Cover
+                Create Your Cover
               </CardTitle>
               <CardDescription>
                 Design a stunning cover for your book with AI assistance
