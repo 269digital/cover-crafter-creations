@@ -481,13 +481,18 @@ const Studio = () => {
                   <h3 className="font-semibold mb-4">Generated Covers</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {imageData.map((image, index) => (
-                      <div key={index} className="relative group">
-                        <img 
-                          src={image.url} 
-                          alt={`Generated cover ${index + 1}`}
-                          className={`${aspectClass} w-full object-cover rounded-lg shadow-sm`}
-                        />
-                        {image.isUpscaled && (
+                        <div key={index} className="relative group">
+                          <img 
+                            src={image.url} 
+                            alt={`Generated cover ${index + 1}`}
+                            className={`${aspectClass} w-full ${coverType === "eBook Cover" ? "object-cover" : "object-contain"} rounded-lg shadow-sm bg-muted`}
+                          />
+                          <div className="absolute top-2 left-2">
+                            <Badge variant="secondary" className="text-[10px]">
+                              {coverType === "eBook Cover" ? "2:3 eBook" : coverType.includes("Album") ? "1:1 Album" : "1:1 Audiobook"}
+                            </Badge>
+                          </div>
+                          {image.isUpscaled && (
                           <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
                             Upscaled
                           </div>

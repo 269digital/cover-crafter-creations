@@ -148,12 +148,16 @@ serve(async (req) => {
     
     const safeAspect = (aspectRatio === 'ASPECT_1_1' || aspectRatio === 'ASPECT_2_3') ? aspectRatio : 'ASPECT_2_3'
     const resolution = safeAspect === 'ASPECT_1_1' ? 'RESOLUTION_1024_1024' : 'RESOLUTION_1024_1536'
+    console.log('Requested aspectRatio from client:', aspectRatio)
+    console.log('Computed safeAspect:', safeAspect)
+    console.log('Chosen resolution:', resolution)
 
     const imageRequest = {
       prompt: prompt || 'High quality cover, sharp details, professional appearance',
       resolution,
       aspect_ratio: safeAspect
     }
+    console.log('Ideogram upscale payload.image_request:', imageRequest)
     formData.append('image_request', JSON.stringify(imageRequest))
 
     // Call Ideogram upscale API with the correct format

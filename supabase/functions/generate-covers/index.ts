@@ -174,6 +174,10 @@ serve(async (req) => {
       }
     };
 
+    console.log('Requested aspectRatio from client:', aspectRatio);
+    console.log('Final aspect_ratio sent to Ideogram:', requestBody.image_request.aspect_ratio);
+    console.log('Ideogram generate payload:', JSON.stringify(requestBody));
+
     const ideogramResponse = await fetch('https://api.ideogram.ai/generate', {
       method: 'POST',
       headers: {
