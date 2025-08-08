@@ -503,11 +503,6 @@ const Studio = () => {
                             alt={`Generated cover ${index + 1}`}
                             className={`${aspectClass} w-full ${coverType === "eBook Cover" ? "object-cover" : "object-contain"} rounded-lg shadow-sm bg-muted`}
                           />
-                          {coverType === "eBook Cover" && (
-                            <div className="absolute top-2 left-2">
-                              <Badge variant="secondary" className="text-[10px]">2:3 eBook</Badge>
-                            </div>
-                          )}
                           {image.isUpscaled && (
                           <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
                             Upscaled
