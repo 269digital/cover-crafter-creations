@@ -434,10 +434,10 @@ const Studio = () => {
 
               {/* Title Field */}
               <div className="space-y-2">
-                <Label htmlFor="title">Book Title</Label>
+                <Label htmlFor="title">{coverType === "Album Cover" ? "Album Title" : "Book Title"}</Label>
                 <Input
                   id="title"
-                  placeholder="Enter your book title"
+                  placeholder={coverType === "Album Cover" ? "Enter album title" : "Enter your book title"}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
@@ -445,10 +445,10 @@ const Studio = () => {
 
               {/* Author Field */}
               <div className="space-y-2">
-                <Label htmlFor="author">Author Name</Label>
+                <Label htmlFor="author">{coverType === "Album Cover" ? "Band/Artist Name" : "Author Name"}</Label>
                 <Input
                   id="author"
-                  placeholder="Enter author name"
+                  placeholder={coverType === "Album Cover" ? "Enter band or artist name" : "Enter author name"}
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
                 />
