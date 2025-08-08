@@ -103,10 +103,10 @@ serve(async (req) => {
       )
     }
 
-    // Get Ideogram API key
-    const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY')
-    if (!ideogramApiKey) {
-      console.error('IDEOGRAM_API_KEY not found')
+    // Use Freepik Magnific (Precision) Upscaler API
+    const freepikApiKey = Deno.env.get('FREEPIK_API_KEY')
+    if (!freepikApiKey) {
+      console.error('FREEPIK_API_KEY not found')
       return new Response(
         JSON.stringify({ error: 'Server configuration error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -121,11 +121,11 @@ serve(async (req) => {
     if (!imageResponse.ok) {
       console.error('Failed to download image:', imageResponse.status, imageResponse.statusText)
       
-      // Check if it's an expired URL (common with Ideogram temporary URLs)
+      // Check if it's an expired URL (common with temporary URLs)
       if (imageResponse.status === 403 || imageResponse.status === 404) {
         return new Response(
           JSON.stringify({ 
-            error: 'The image URL has expired. This happens with images that are several hours old. Please try regenerating the cover in the Studio instead.',
+            error: 'The image URL has expired. Please try regenerating the cover in the Studio instead.',
             expired: true
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -142,53 +142,85 @@ serve(async (req) => {
     console.log('Downloaded image size:', imageBuffer.byteLength, 'bytes')
     const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
 
-    // Create FormData for the upscale API
+    // Create FormData for the Freepik upscaler API (2x, JPEG)
     const formData = new FormData()
-    formData.append('image_file', imageBlob, 'cover.jpg')
-    
-    const safeAspect = (aspectRatio === 'ASPECT_1_1' || aspectRatio === 'ASPECT_2_3') ? aspectRatio : 'ASPECT_2_3'
-    const resolution = safeAspect === 'ASPECT_1_1' ? 'RESOLUTION_1024_1024' : 'RESOLUTION_1024_1536'
-    console.log('Requested aspectRatio from client:', aspectRatio)
-    console.log('Computed safeAspect:', safeAspect)
-    console.log('Chosen resolution:', resolution)
+    formData.append('image', imageBlob, 'cover.jpg')
+    formData.append('scale', '2')
+    formData.append('format', 'jpeg')
+    formData.append('mode', 'magnific')
 
-    const imageRequest = {
-      prompt: prompt || 'High quality cover, sharp details, professional appearance',
-      resolution,
-      aspect_ratio: safeAspect
-    }
-    console.log('Ideogram upscale payload.image_request:', imageRequest)
-    formData.append('image_request', JSON.stringify(imageRequest))
-
-    // Call Ideogram upscale API with the correct format
-    console.log('Calling Ideogram upscale API with image file')
-    const upscaleResponse = await fetch('https://api.ideogram.ai/upscale', {
+    // Call Freepik Magnific Upscaler API
+    console.log('Calling Freepik Magnific Upscaler API with image file')
+    const createTaskResp = await fetch('https://api.freepik.com/v1/image-upscaler', {
       method: 'POST',
       headers: {
-        'Api-Key': ideogramApiKey,
+        'Authorization': `Bearer ${freepikApiKey}`,
       },
       body: formData,
     })
 
-    if (!upscaleResponse.ok) {
-      const errorText = await upscaleResponse.text()
-      console.error('Ideogram upscale API error:', upscaleResponse.status, errorText)
+    if (!createTaskResp.ok) {
+      const errorText = await createTaskResp.text()
+      console.error('Freepik create task error:', createTaskResp.status, errorText)
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to upscale image. The generation ID may be invalid or expired.',
+          error: 'Failed to create upscaling task',
           details: errorText
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const upscaleData = await upscaleResponse.json()
-    console.log('Upscale response:', upscaleData)
+    const taskData = await createTaskResp.json()
+    console.log('Freepik create task response:', taskData)
 
-    const upscaledImageUrl = upscaleData.data?.[0]?.url || upscaleData.url
-    
+    // Try to extract immediate URL if provided (some responses might be synchronous)
+    let upscaledImageUrl: string | undefined =
+      taskData?.result?.url || taskData?.data?.url || taskData?.url
+
+    // Otherwise, poll for task completion
+    let taskId: string | undefined = taskData?.id || taskData?.data?.id || taskData?.task_id || taskData?.taskId
+
+    if (!upscaledImageUrl && taskId) {
+      const statusUrl = `https://api.freepik.com/v1/image-upscaler/${taskId}`
+      console.log('Polling Freepik task status at:', statusUrl)
+
+      const wait = (ms: number) => new Promise((res) => setTimeout(res, ms))
+
+      let attempts = 0
+      const maxAttempts = 30 // up to ~60s with 2s backoff
+      while (attempts < maxAttempts) {
+        attempts++
+        const statusResp = await fetch(statusUrl, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${freepikApiKey}` },
+        })
+        if (!statusResp.ok) {
+          const txt = await statusResp.text()
+          console.error('Freepik status error:', statusResp.status, txt)
+          break
+        }
+        const statusData = await statusResp.json()
+        const status = statusData?.status || statusData?.state || statusData?.data?.status
+        console.log(`Poll ${attempts}:`, statusData)
+
+        if (status && ['completed', 'succeeded', 'success', 'finished'].includes(String(status).toLowerCase())) {
+          upscaledImageUrl = statusData?.result?.url || statusData?.data?.result?.url || statusData?.data?.url || statusData?.output?.url
+          break
+        }
+        if (status && ['failed', 'error'].includes(String(status).toLowerCase())) {
+          console.error('Upscaling task failed:', statusData)
+          return new Response(
+            JSON.stringify({ error: 'Upscaling failed', details: statusData }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        await wait(2000)
+      }
+    }
+
     if (!upscaledImageUrl) {
-      console.error('No upscaled image URL in response')
+      console.error('No upscaled image URL received from Freepik API')
       return new Response(
         JSON.stringify({ error: 'Failed to get upscaled image URL' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
