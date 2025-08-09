@@ -66,7 +66,7 @@ serve(async (req) => {
       )
     }
 
-    // Check user credits and deduct 2 credits for upscaling
+    // Check user credits (requires 2 credits for upscaling)
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('credits')
@@ -86,20 +86,6 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Insufficient credits. You need 2 credits to upscale an image.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Deduct 2 credits
-    const { error: updateError } = await supabaseClient
-      .from('profiles')
-      .update({ credits: profile.credits - 2 })
-      .eq('user_id', user.id)
-
-    if (updateError) {
-      console.error('Error updating credits:', updateError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to process credits' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -179,7 +165,7 @@ serve(async (req) => {
     console.log('Upscale response:', upscaleData)
 
     const upscaledImageUrl = upscaleData.data?.[0]?.url || upscaleData.url
-    
+
     if (!upscaledImageUrl) {
       console.error('No upscaled image URL in response')
       return new Response(
@@ -187,6 +173,24 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Deduct 2 credits now that upscaling succeeded
+    const { data: updatedProfile, error: updateError } = await supabaseClient
+      .from('profiles')
+      .update({ credits: profile.credits - 2 })
+      .eq('user_id', user.id)
+      .select('credits')
+      .single()
+
+    if (updateError) {
+      console.error('Error updating credits:', updateError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to process credits' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const creditsRemaining = updatedProfile?.credits ?? profile.credits - 2
 
     // Background task to download and store the upscaled image
     const storeImageTask = async () => {
@@ -266,11 +270,11 @@ serve(async (req) => {
 
     // Return immediate response with temporary upscaled image
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         upscaledImage: upscaledImageUrl,
         message: "Image upscaled successfully! It will be permanently saved to your collection shortly.",
-        creditsRemaining: profile.credits - 2
+        creditsRemaining
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
