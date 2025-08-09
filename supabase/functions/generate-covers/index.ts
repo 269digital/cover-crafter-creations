@@ -152,12 +152,15 @@ serve(async (req) => {
         prompt += `Book description: ${description}. `;
       }
       
-      if (tagline) {
+      // Do not use tagline on eBook covers per requirement
+      if (tagline && coverTypeVal !== 'eBook Cover') {
         prompt += `Tagline: "${tagline}". `;
       }
       
       if (coverTypeVal === 'Album Cover') {
         prompt += `Add the exact text on the image: Title: "${title}" and Artist: "${author}". Spell them exactly as provided, place prominently with clean, legible typography. Do not omit, paraphrase, or add extra words. Ensure high contrast and readability. `;
+      } else if (coverTypeVal === 'eBook Cover') {
+        prompt += `Text rules: Only include exactly these two text elements on the cover — 1) Title: "${title}" and 2) Author: "${author}". Do not add any other text: no subtitles, taglines, series names, quotes, publisher marks, watermarks, logos, "A novel", "Book One", or any extra words. Spell exactly as provided, with clean, commercial typography and strong readability. Place prominently and balance with the artwork. `;
       } else {
         prompt += `Create an eye-catching, professional ${designLabel} with the title and author name prominently displayed. `;
       }
