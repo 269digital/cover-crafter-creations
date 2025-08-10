@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Download, Image, Eye, X, Moon, Sun, Trash2 } from "lucide-react";
+import { CreditCard, Download, Image as ImageIcon, Eye, X, Moon, Sun, Trash2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -136,14 +136,55 @@ const MyCovers = () => {
     navigate("/");
   };
 
-  const handleDownload = (imageUrl: string) => {
-    // Create a temporary link element and trigger download
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = 'book-cover.jpg';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (imageUrl: string) => {
+    try {
+      // Fetch the image as a blob (avoids CORS canvas tainting)
+      const res = await fetch(imageUrl, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+      const srcBlob = await res.blob();
+
+      // Decode to get the intrinsic size
+      const objectUrl = URL.createObjectURL(srcBlob);
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = reject;
+        i.src = objectUrl;
+      });
+
+      // Draw at full resolution and export as high‑quality JPEG
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas unsupported');
+      ctx.drawImage(img, 0, 0);
+
+      const jpgBlob: Blob = await new Promise((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('JPEG encode failed'))), 'image/jpeg', 0.95)
+      );
+
+      URL.revokeObjectURL(objectUrl);
+
+      // Trigger download with a .jpg filename
+      const dlUrl = URL.createObjectURL(jpgBlob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = 'book-cover.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(dlUrl);
+    } catch (e) {
+      console.error('Download error:', e);
+      // Fallback to direct download of original URL
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = 'book-cover.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const getUpscaledImage = (creation: Creation): string | null => {
@@ -172,7 +213,7 @@ const MyCovers = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
-              <Image className="h-6 w-6 text-white" />
+              <ImageIcon className="h-6 w-6 text-white" />
               <h1 className="text-xl font-bold text-white">My Covers</h1>
               <Button
                 variant="ghost"
@@ -253,7 +294,7 @@ const MyCovers = () => {
         ) : creations.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
-              <Image className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-semibold mb-2">No HD covers saved yet</h3>
               <p className="text-muted-foreground mb-4">
                 Create covers in the Studio and upscale them to save them permanently to your collection
