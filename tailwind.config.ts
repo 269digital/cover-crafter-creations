@@ -69,6 +69,9 @@ export default {
 				'gradient-accent': 'var(--gradient-accent)',
 				'gradient-hero': 'var(--gradient-hero)',
 			},
+			fontFamily: {
+				brand: ['"Alex Brush"', 'cursive'],
+			},
 			boxShadow: {
 				'creative': 'var(--shadow-creative)',
 				'card': 'var(--shadow-card)',

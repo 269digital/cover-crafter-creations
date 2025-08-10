@@ -20,7 +20,7 @@ const Index = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Palette className="h-8 w-8 text-white" />
-            <h1 className="text-2xl font-bold text-white">Covers by AI</h1>
+            <h1 className="text-2xl font-bold text-white font-brand">Cover Artisan</h1>
           </div>
           <Button 
             variant="secondary" 
@@ -134,7 +134,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="container mx-auto px-4 py-8 text-center text-white/80">
-        <p>&copy; 2025 Covers by AI. Create amazing book covers with AI.</p>
+        <p>&copy; 2025 Cover Artisan. Create amazing book covers with AI.</p>
       </footer>
     </div>
   );
