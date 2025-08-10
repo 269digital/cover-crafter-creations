@@ -228,7 +228,8 @@ const Studio = () => {
     try {
         const { data, error } = await supabase.functions.invoke('upscale-cover', {
         body: { 
-          imageUrl: imageInfo.url
+          imageUrl: imageInfo.url,
+          scale: 2
         }
       });
 
@@ -605,7 +606,7 @@ const Studio = () => {
                                 ) : (
                                   <>
                                     <Zap className="h-3 w-3 mr-1" />
-                                    Upscale
+                                    Upscale (-2 credits)
                                   </>
                                 )}
                               </Button>
@@ -660,7 +661,7 @@ const Studio = () => {
                                 ) : (
                                   <>
                                     <Zap className="h-4 w-4 mr-2" />
-                                    Upscale
+                                    Upscale (-2 credits)
                                   </>
                                 )}
                               </Button>
