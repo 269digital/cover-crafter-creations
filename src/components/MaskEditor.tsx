@@ -379,7 +379,9 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const handleUpscale = async () => {
     try {
       setIsUpscaling(true);
-      const srcUrl = displayedUrl || originalUrl || imageUrl;
+      const srcUrl = (displayedUrl && displayedUrl.startsWith('blob:'))
+        ? (originalUrl || imageUrl)
+        : (displayedUrl || originalUrl || imageUrl);
       const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
         body: { imageUrl: srcUrl, coverId }
       });
