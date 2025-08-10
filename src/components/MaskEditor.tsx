@@ -258,19 +258,78 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     drawPreview();
   };
 
+  // Binarize mask to strict black/white with full opacity.
+  // Returns true if the mask is untouched (all white, meaning no removals painted).
+  const binarizeAndCheckUntouched = (): boolean => {
+    if (!maskCanvasRef.current) return true;
+    const mask = maskCanvasRef.current;
+    const ctx = mask.getContext('2d')!;
+    const imgData = ctx.getImageData(0, 0, mask.width, mask.height);
+    const data = imgData.data;
+    let hasBlack = false;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const gray = (r + g + b) / 3;
+
+      if (gray < 128) {
+        // Force pure black, fully opaque
+        data[i] = 0;
+        data[i + 1] = 0;
+        data[i + 2] = 0;
+        data[i + 3] = 255;
+        hasBlack = true;
+      } else {
+        // Force pure white, fully opaque
+        data[i] = 255;
+        data[i + 1] = 255;
+        data[i + 2] = 255;
+        data[i + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return !hasBlack;
+  };
+
   const handleGenerateFix = async () => {
     try {
       setSubmitting(true);
+
+      if (!imgEl) throw new Error('Image not ready');
+
+      // Normalize mask values and check if the user painted anything
+      const isUntouched = binarizeAndCheckUntouched();
+
+      // If no changes were painted, skip edit and just upscale the original image
+      if (isUntouched) {
+        toast.info('Upscaling...', { duration: 1200 });
+        const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
+          body: { imageUrl: originalUrl, coverId }
+        });
+
+        if (upError || !upData?.success) {
+          console.error('Upscale error:', upError || upData);
+          throw new Error((upError as any)?.message || upData?.error || 'Upscale failed');
+        }
+
+        await refreshCredits();
+        toast.success('Fixed and upscaled! Redirecting to My Covers...');
+        navigate('/my-covers');
+        return;
+      }
+
       toast.info('Applying edit...', { duration: 1200 });
 
-      // Export mask as PNG (full resolution)
+      // Export mask as PNG (full resolution) after binarization
       const maskBlob = await new Promise<Blob | null>((resolve) =>
         maskCanvasRef.current!.toBlob((b) => resolve(b), 'image/png')
       );
       if (!maskBlob) throw new Error('Failed to export mask');
 
       // Export the exact source image at the SAME pixel dimensions as the mask
-      if (!imgEl) throw new Error('Image not ready');
       const srcCanvas = document.createElement('canvas');
       srcCanvas.width = maskCanvasRef.current!.width;
       srcCanvas.height = maskCanvasRef.current!.height;
