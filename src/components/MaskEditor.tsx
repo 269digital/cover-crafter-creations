@@ -434,11 +434,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       <div className="md:hidden space-y-4">
         <div className="space-y-2">
           <Label>Brush size</Label>
-          <Slider value={[brushSize]} min={5} max={150} step={1} onValueChange={(v) => setBrushSize(v[0])} />
+          <Slider variant="muted" value={[brushSize]} min={5} max={150} step={1} onValueChange={(v) => setBrushSize(v[0])} />
         </div>
-        <Button variant="secondary" onClick={clearMask} className="w-full">
-          Clear Mask
-        </Button>
+          <Button variant="secondary" onClick={clearMask} className="w-full bg-muted text-foreground hover:bg-muted/90">
+            Clear Mask
+          </Button>
         <Button onClick={handleGenerateFix} className="w-full" disabled={isGenerating || isUpscaling}>
           {isGenerating ? (
             <>
@@ -490,11 +490,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         <div className="hidden md:block lg:col-span-1 space-y-4 w-full max-w-md mx-auto lg:max-w-none">
           <div className="space-y-2">
             <Label>Brush size</Label>
-            <Slider value={[brushSize]} min={5} max={150} step={1} onValueChange={(v) => setBrushSize(v[0])} />
+            <Slider variant="muted" value={[brushSize]} min={5} max={150} step={1} onValueChange={(v) => setBrushSize(v[0])} />
           </div>
 
 
-          <Button variant="secondary" onClick={clearMask} className="w-full">
+          <Button variant="secondary" onClick={clearMask} className="w-full bg-muted text-foreground hover:bg-muted/90">
             Clear Mask
           </Button>
 
