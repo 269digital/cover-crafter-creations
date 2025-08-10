@@ -171,8 +171,15 @@ serve(async (req) => {
     console.log('Ideogram upscale response:', upscaleData)
 
     // Extract the upscaled image URL from Ideogram's response
-    const upscaledImageUrl = upscaleData?.data?.[0]?.url || upscaleData?.url || upscaleData?.image_url
+    const firstItem = upscaleData?.data?.[0] || {}
+    const upscaledImageUrl = firstItem.download_url 
+      || firstItem.downloadUrl 
+      || firstItem.url 
+      || upscaleData?.url 
+      || upscaleData?.image_url
 
+    console.log('Upscale data first item keys:', Object.keys(firstItem || {}))
+    console.log('Chosen upscaledImageUrl:', upscaledImageUrl)
 
     if (!upscaledImageUrl) {
       console.error('No upscaled image URL received from Ideogram API')
