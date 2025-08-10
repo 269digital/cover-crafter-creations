@@ -69,9 +69,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       mctx.fillStyle = '#ffffff';
       mctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
 
-      // Set preview size based on container
-      resizePreview();
-      drawPreview();
+      // Set preview size based on container and draw (rAF to ensure layout ready)
+      requestAnimationFrame(() => {
+        resizePreview();
+        drawPreview();
+      });
     }).catch(() => {
       toast.error("Failed to load image for editing.");
     });
@@ -83,6 +85,46 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     window.addEventListener('resize', onResize);
     return () => { mounted = false; window.removeEventListener('resize', onResize); };
   }, [imageUrl]);
+
+  // Fallback: if no Studio hint, approximate Studio tile size
+  useEffect(() => {
+    if (fixedSize) return;
+    const compute = () => {
+      const isSm = window.matchMedia('(min-width: 640px)').matches;
+      const containerMax = 672; // Tailwind max-w-2xl
+      const padding = 32; // container horizontal padding estimate
+      const gap = 16; // gap-4
+      const columns = isSm ? 2 : 1;
+      const base = Math.min(window.innerWidth - padding, containerMax);
+      const tile = Math.max(240, Math.min(384, Math.round(base / columns - (columns > 1 ? gap : 0))));
+      const h = Math.round(tile * (coverType === 'eBook Cover' ? 3 / 2 : 1));
+      setFixedSize({ w: tile, h });
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(document.body);
+    return () => ro.disconnect();
+  }, [coverType, fixedSize]);
+
+  // Ensure initial draw when image and layout are ready
+  useEffect(() => {
+    if (!imgEl) return;
+    requestAnimationFrame(() => {
+      resizePreview();
+      drawPreview();
+    });
+  }, [imgEl, fixedSize, coverType]);
+
+  // Observe container size changes to keep canvas in sync
+  useEffect(() => {
+    if (!imgEl || !containerRef.current) return;
+    const ro = new ResizeObserver(() => {
+      resizePreview();
+      drawPreview();
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [imgEl, fixedSize, coverType]);
 
   // Ensure initial draw when image and layout are ready
   useEffect(() => {
