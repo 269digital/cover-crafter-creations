@@ -51,8 +51,9 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const { refreshCredits } = useAuth();
   const navigate = useNavigate();
 
-  // Responsive container height based on cover type aspect ratio
+  // Responsive container height based on image aspect ratio (fallback to cover type)
   const [containerHeight, setContainerHeight] = useState<number>(PREVIEW_SIZE.h);
+  const [imgAspect, setImgAspect] = useState<number | null>(null); // width/height
 
   // Load the image when displayedUrl changes
   useEffect(() => {
@@ -60,6 +61,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     loadImage(displayedUrl).then((img) => {
       if (!mounted) return;
       setImgEl(img);
+      setImgAspect(img.naturalWidth / img.naturalHeight);
 
       // Initialize mask canvas to full image resolution and fill white (keep)
       const maskCanvas = maskCanvasRef.current!;
@@ -114,7 +116,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
     const container = containerRef.current;
     const availableW = Math.max(320, Math.floor(container.clientWidth || PREVIEW_SIZE.w));
-    const ratio = coverType === 'eBook Cover' ? (2 / 3) : 1; // width:height
+    const ratio = imgAspect ?? (coverType === 'eBook Cover' ? (2 / 3) : 1); // width:height (use actual image when available)
     const cssW = availableW;
     const cssH = Math.round(cssW / ratio);
 
@@ -131,10 +133,10 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     canvas.width = Math.floor(cssW * dpr);
     canvas.height = Math.floor(cssH * dpr);
 
-    // Compute image draw scale and offsets (contain, avoid upscaling)
+    // Compute image draw scale and offsets (contain, allow upscaling)
     const fitW = cssW / imgEl.naturalWidth;
     const fitH = cssH / imgEl.naturalHeight;
-    const scaleToFit = Math.min(fitW, fitH, 1);
+    const scaleToFit = Math.min(fitW, fitH);
     const drawW = imgEl.naturalWidth * scaleToFit;
     const drawH = imgEl.naturalHeight * scaleToFit;
     const offX = (cssW - drawW) / 2;
