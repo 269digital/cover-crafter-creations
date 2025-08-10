@@ -66,3 +66,6 @@ verify_jwt = true
 
 [functions.upscale-cover]
 verify_jwt = true
+
+[functions.proxy-image]
+verify_jwt = false
