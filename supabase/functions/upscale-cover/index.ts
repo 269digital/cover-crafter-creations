@@ -195,8 +195,10 @@ serve(async (req) => {
         }
 
         const upscaledImageBuffer = await upscaledImageResponse.arrayBuffer()
+        const upscaledContentType = upscaledImageResponse.headers.get('content-type') || 'image/jpeg'
+        const upscaledExt = upscaledContentType.includes('png') ? 'png' : (upscaledContentType.includes('webp') ? 'webp' : 'jpg')
         const timestamp = Date.now()
-        const fileName = `${user.id}/${timestamp}_upscaled.jpg`
+        const fileName = `${user.id}/${timestamp}_upscaled.${upscaledExt}`
         
         console.log('Storing upscaled image in Supabase Storage:', fileName)
         
@@ -204,7 +206,7 @@ serve(async (req) => {
         const { data: uploadData, error: uploadError } = await supabaseClient.storage
           .from('upscaled-covers')
           .upload(fileName, upscaledImageBuffer, {
-            contentType: 'image/jpeg',
+            contentType: upscaledContentType,
             upsert: false
           })
 
