@@ -47,8 +47,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const { refreshCredits } = useAuth();
   const navigate = useNavigate();
 
-  // Keep the preview at the same CSS size as Studio when available
-  const [fixedSize, setFixedSize] = useState<{ w: number; h: number }>({ w: PREVIEW_SIZE.w, h: PREVIEW_SIZE.h });
+  // Responsive container height based on cover type aspect ratio
+  const [containerHeight, setContainerHeight] = useState<number>(PREVIEW_SIZE.h);
 
   // Load the image once
   useEffect(() => {
@@ -90,7 +90,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       resizePreview();
       drawPreview();
     });
-  }, [imgEl, fixedSize, coverType]);
+  }, [imgEl, containerHeight, coverType]);
 
   // Observe container size changes to keep canvas in sync
   useEffect(() => {
@@ -101,14 +101,22 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     });
     ro.observe(containerRef.current);
     return () => ro.disconnect();
-  }, [imgEl, fixedSize, coverType]);
+  }, [imgEl, containerHeight, coverType]);
 
 
   const resizePreview = () => {
-    if (!imgEl || !previewCanvasRef.current) return;
+    if (!imgEl || !previewCanvasRef.current || !containerRef.current) return;
 
-    const cssW = PREVIEW_SIZE.w;
-    const cssH = PREVIEW_SIZE.h;
+    const container = containerRef.current;
+    const availableW = Math.max(320, Math.floor(container.clientWidth || PREVIEW_SIZE.w));
+    const ratio = coverType === 'eBook Cover' ? (2 / 3) : 1; // width:height
+    const cssW = availableW;
+    const cssH = Math.round(cssW / ratio);
+
+    // Keep container in sync for layout
+    container.style.width = '100%';
+    container.style.height = cssH + 'px';
+    setContainerHeight(cssH);
 
     // Handle DPR for crisp drawing
     const dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -318,8 +326,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
           <div className="rounded-lg border bg-card p-3">
             <div
               ref={containerRef}
-              className="relative"
-              style={{ width: fixedSize.w, height: fixedSize.h }}
+              className="relative w-full"
+              style={{ width: '100%', height: containerHeight }}
             >
               <canvas
                 ref={previewCanvasRef}

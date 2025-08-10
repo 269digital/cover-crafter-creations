@@ -23,6 +23,8 @@ interface Creation {
 const EditCover: React.FC = () => {
   const { coverId } = useParams<{ coverId: string }>();
   const navigate = useNavigate();
+  const { credits, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null); // display URL (may be proxied blob)
@@ -120,8 +122,64 @@ const EditCover: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-gradient-hero border-b shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center space-x-2">
+              <Palette className="h-6 w-6 text-white" />
+              <h1 className="text-xl font-bold text-white">Edit Cover</h1>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="text-white hover:bg-white/10"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="px-3 py-1 text-sm font-medium bg-white/10 text-white border-white/20">
+                <CreditCard className="h-4 w-4 mr-1" />
+                {credits} Credits
+              </Badge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/buy-credits")}
+                className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+              >
+                <CreditCard className="h-4 w-4 mr-1" />
+                Buy Credits
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap mt-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/my-covers")}
+              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+            >
+              My Covers
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/studio")}
+              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+            >
+              Create New
+            </Button>
+          </div>
+        </div>
+      </header>
+
       <main className="container mx-auto px-4 py-6 space-y-4">
-        <h1 className="text-2xl font-bold">Edit Cover</h1>
         <p className="text-muted-foreground">Anything you paint over will be removed and replaced by AI.</p>
         {imageUrl && originalUrl && coverId && (
           <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} coverType={coverType} />
