@@ -130,64 +130,93 @@ serve(async (req) => {
     const imageBuffer = await imageResponse.arrayBuffer()
     console.log('Downloaded image size:', imageBuffer.byteLength, 'bytes')
 
-    // Create multipart form data for Ideogram upscale API
-    console.log('Calling Ideogram Upscale API')
-    const formData = new FormData()
-    
-    // Add the image file (preserve original content type if possible)
-    const srcContentType = imageResponse.headers.get('content-type') || 'image/jpeg'
-    const fileExt = srcContentType.includes('png') ? 'png' : (srcContentType.includes('webp') ? 'webp' : 'jpg')
-    const imageBlob = new Blob([imageBuffer], { type: srcContentType })
-    formData.append('image_file', imageBlob, `image.${fileExt}`)
-    
-    // Minimal request payload (defaults to 2x on Ideogram)
-    const imageRequest = {}
-    formData.append('image_request', JSON.stringify(imageRequest))
+    // Helper to call Ideogram Upscale once
+    const callUpscale = async (srcBuffer: ArrayBuffer, contentType: string) => {
+      console.log('Calling Ideogram Upscale API')
+      const formData = new FormData()
+      const fileExt = contentType.includes('png') ? 'png' : (contentType.includes('webp') ? 'webp' : 'jpg')
+      const imageBlob = new Blob([srcBuffer], { type: contentType })
+      formData.append('image_file', imageBlob, `image.${fileExt}`)
+      formData.append('image_request', JSON.stringify({}))
 
-    const upscaleResponse = await fetch('https://api.ideogram.ai/upscale', {
-      method: 'POST',
-      headers: {
-        'Api-Key': ideogramApiKey,
-      },
-      body: formData
-    })
+      const resp = await fetch('https://api.ideogram.ai/upscale', {
+        method: 'POST',
+        headers: { 'Api-Key': ideogramApiKey },
+        body: formData
+      })
 
-    if (!upscaleResponse.ok) {
-      const errorText = await upscaleResponse.text()
-      console.error('Ideogram upscale error:', upscaleResponse.status, errorText)
-      return new Response(
-        JSON.stringify({ 
-          error: upscaleResponse.status === 401 || upscaleResponse.status === 403
-            ? 'Upscaler authentication failed with Ideogram. Please verify the API key in Supabase secrets.'
-            : 'Failed to upscale image',
-          details: errorText,
-          status: upscaleResponse.status
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      if (!resp.ok) {
+        const errorText = await resp.text()
+        console.error('Ideogram upscale error:', resp.status, errorText)
+        return { error: { status: resp.status, message: errorText } }
+      }
+
+      const data = await resp.json()
+      console.log('Ideogram upscale response:', data)
+
+      const firstItem = data?.data?.[0] || {}
+      const url = firstItem.download_url || firstItem.downloadUrl || firstItem.url || data?.url || data?.image_url
+      const resolutionStr = String(firstItem.resolution || '')
+      let w = 0, h = 0
+      const match = resolutionStr.match(/(\d+)x(\d+)/)
+      if (match) { w = parseInt(match[1], 10); h = parseInt(match[2], 10) }
+
+      console.log('Upscale first item keys:', Object.keys(firstItem || {}))
+      console.log('Chosen url:', url, 'resolution:', w, 'x', h)
+
+      if (!url) {
+        return { error: { status: 500, message: 'No upscaled image URL' } }
+      }
+
+      // Download the upscaled image
+      const upRes = await fetch(url)
+      if (!upRes.ok) {
+        console.error('Failed to download upscaled image:', upRes.status)
+        return { error: { status: upRes.status, message: 'Download upscaled image failed' } }
+      }
+      const upBuf = await upRes.arrayBuffer()
+      const upType = upRes.headers.get('content-type') || 'image/jpeg'
+      return { url, buffer: upBuf, contentType: upType, width: w, height: h }
     }
 
-    const upscaleData = await upscaleResponse.json()
-    console.log('Ideogram upscale response:', upscaleData)
-
-    // Extract the upscaled image URL from Ideogram's response
-    const firstItem = upscaleData?.data?.[0] || {}
-    const upscaledImageUrl = firstItem.download_url 
-      || firstItem.downloadUrl 
-      || firstItem.url 
-      || upscaleData?.url 
-      || upscaleData?.image_url
-
-    console.log('Upscale data first item keys:', Object.keys(firstItem || {}))
-    console.log('Chosen upscaledImageUrl:', upscaledImageUrl)
-
-    if (!upscaledImageUrl) {
-      console.error('No upscaled image URL received from Ideogram API')
-      return new Response(
-        JSON.stringify({ error: 'Failed to get upscaled image URL' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    // First pass
+    const first = await callUpscale(imageBuffer, imageResponse.headers.get('content-type') || 'image/jpeg')
+    if ((first as any).error) {
+      const e = (first as any).error
+      return new Response(JSON.stringify({ error: e.message, status: e.status }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
+
+    let finalBuf = (first as any).buffer as ArrayBuffer
+    let finalType = (first as any).contentType as string
+    let finalUrl = (first as any).url as string
+    let finalW = (first as any).width as number
+    let finalH = (first as any).height as number
+
+    let passes = 1
+
+    // If still too small (long edge < 2000px), run a second upscale pass once
+    const longEdge = Math.max(finalW || 0, finalH || 0)
+    if (longEdge && longEdge < 2000) {
+      console.log('Result too small after first pass (', finalW, 'x', finalH, '), running second pass')
+      const second = await callUpscale(finalBuf, finalType)
+      if (!(second as any).error) {
+        finalBuf = (second as any).buffer
+        finalType = (second as any).contentType
+        finalUrl = (second as any).url
+        finalW = (second as any).width
+        finalH = (second as any).height
+        passes = 2
+      } else {
+        console.warn('Second pass failed, keeping first pass result:', (second as any).error)
+      }
+    }
+
+    // Proceed to store final upscaled image
+    const upscaledImageBuffer = finalBuf
+    const upscaledContentType = finalType
+    const upscaledExt = upscaledContentType.includes('png') ? 'png' : (upscaledContentType.includes('webp') ? 'webp' : 'jpg')
+    const upscaledImageUrl = finalUrl
+
 
     // Background task to download and store the upscaled image
     const storeImageTask = async () => {
@@ -277,8 +306,9 @@ serve(async (req) => {
       }
     }
 
-// Deduct 2 credits now that the task succeeded and we have a URL
-const newCredits = (profile.credits ?? 0) - 2
+// Deduct credits now that the task succeeded and we have a URL
+const creditsToDeduct = (passes || 1) * 2
+const newCredits = (profile.credits ?? 0) - creditsToDeduct
 const { error: lateUpdateError } = await supabaseClient
   .from('profiles')
   .update({ credits: newCredits })
@@ -300,7 +330,11 @@ return new Response(
   JSON.stringify({ 
     success: true,
     upscaledImage: upscaledImageUrl,
-    message: "Image upscaled successfully! It will be permanently saved to your collection shortly.",
+    resolution: { width: finalW, height: finalH },
+    passes,
+    message: passes > 1 
+      ? "Image upscaled (2 passes) to meet target resolution. It will be saved to your collection shortly."
+      : "Image upscaled successfully! It will be permanently saved to your collection shortly.",
     creditsRemaining: newCredits
   }),
   { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
