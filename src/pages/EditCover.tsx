@@ -54,19 +54,20 @@ const EditCover: React.FC = () => {
         }
         setOriginalUrl(url);
 
-        // For ideogram ephemeral URLs, proxy through edge function to avoid CORS
-        if (/^https:\/\/ideogram\.ai\//.test(url)) {
-          const { data: session } = await supabase.auth.getSession();
-          const accessToken = session.session?.access_token;
-          const resp = await fetch(
-            `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(url)}`,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
-          );
-          if (!resp.ok) throw new Error('Failed to proxy image');
-          const blob = await resp.blob();
-          const objUrl = URL.createObjectURL(blob);
-          setImageUrl(objUrl);
-        } else {
+        try {
+          const host = new URL(url).hostname;
+          const isIdeogram = host === 'ideogram.ai' || host.endsWith('.ideogram.ai');
+          if (isIdeogram) {
+            const { data: session } = await supabase.auth.getSession();
+            const accessToken = session.session?.access_token;
+            if (!accessToken) throw new Error('Not authenticated');
+            // Use the proxy URL directly so the browser loads from our domain
+            const proxied = `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(url)}`;
+            setImageUrl(proxied);
+          } else {
+            setImageUrl(url);
+          }
+        } catch {
           setImageUrl(url);
         }
       } catch (e: any) {
@@ -95,7 +96,7 @@ const EditCover: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={() => navigate(-1)}>Go Back</Button>
+            <Button onClick={() => navigate('/my-covers')}>Go to My Covers</Button>
           </CardContent>
         </Card>
       </div>
