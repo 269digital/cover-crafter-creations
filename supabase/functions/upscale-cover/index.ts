@@ -55,8 +55,8 @@ serve(async (req) => {
     const user = userData.user
     console.log('Authenticated user:', user.id)
 
-    const { imageUrl, prompt, aspectRatio, coverId, scale } = await req.json()
-    console.log('Received upscale request with imageUrl:', imageUrl, 'coverId:', coverId, 'scale:', scale)
+    const { imageUrl, prompt, aspectRatio, coverId, scale, coverType } = await req.json()
+    console.log('Received upscale request with imageUrl:', imageUrl, 'coverId:', coverId, 'coverType:', coverType, 'scale:', scale)
 
     if (!imageUrl) {
       console.error('No image URL provided')
@@ -91,7 +91,30 @@ serve(async (req) => {
 
 // Defer credits deduction until after successful task creation/upscale
 
+// Determine desired aspect ratio and resolution based on coverType
+let resolvedCoverType: string | undefined = coverType
+if (!resolvedCoverType && coverId) {
+  const { data: creation, error: findCoverTypeError } = await supabaseClient
+    .from('creations')
+    .select('cover_type')
+    .eq('id', coverId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+  if (findCoverTypeError) {
+    console.warn('Could not fetch cover_type for coverId:', coverId, findCoverTypeError)
+  }
+  resolvedCoverType = creation?.cover_type || undefined
+}
 
+const isSquare = resolvedCoverType === 'Album Cover' || resolvedCoverType === 'Audiobook Cover'
+const desiredAspect = isSquare ? 'ASPECT_1_1' : 'ASPECT_2_3'
+const desiredResolution = isSquare ? '2048x2048' : '1664x2496'
+
+const imageRequestPayload: any = {
+  aspect_ratio: desiredAspect,
+  resolution: desiredResolution,
+}
+if (prompt) imageRequestPayload.prompt = String(prompt)
     // Use Ideogram Upscale API
     const ideogramApiKey = Deno.env.get('IDEOGRAM_API_KEY')
     if (!ideogramApiKey) {
@@ -131,13 +154,13 @@ serve(async (req) => {
     console.log('Downloaded image size:', imageBuffer.byteLength, 'bytes')
 
     // Helper to call Ideogram Upscale once
-    const callUpscale = async (srcBuffer: ArrayBuffer, contentType: string) => {
+    const callUpscale = async (srcBuffer: ArrayBuffer, contentType: string, reqPayload: any) => {
       console.log('Calling Ideogram Upscale API')
       const formData = new FormData()
       const fileExt = contentType.includes('png') ? 'png' : (contentType.includes('webp') ? 'webp' : 'jpg')
       const imageBlob = new Blob([srcBuffer], { type: contentType })
       formData.append('image_file', imageBlob, `image.${fileExt}`)
-      formData.append('image_request', JSON.stringify({}))
+      formData.append('image_request', JSON.stringify(reqPayload))
 
       const resp = await fetch('https://api.ideogram.ai/upscale', {
         method: 'POST',
@@ -180,7 +203,7 @@ serve(async (req) => {
     }
 
     // First pass
-    const first = await callUpscale(imageBuffer, imageResponse.headers.get('content-type') || 'image/jpeg')
+    const first = await callUpscale(imageBuffer, imageResponse.headers.get('content-type') || 'image/jpeg', imageRequestPayload)
     if ((first as any).error) {
       const e = (first as any).error
       return new Response(JSON.stringify({ error: e.message, status: e.status }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -192,24 +215,7 @@ serve(async (req) => {
     let finalW = (first as any).width as number
     let finalH = (first as any).height as number
 
-    let passes = 1
-
-    // If still too small (long edge < 2000px), run a second upscale pass once
-    const longEdge = Math.max(finalW || 0, finalH || 0)
-    if (longEdge && longEdge < 2000) {
-      console.log('Result too small after first pass (', finalW, 'x', finalH, '), running second pass')
-      const second = await callUpscale(finalBuf, finalType)
-      if (!(second as any).error) {
-        finalBuf = (second as any).buffer
-        finalType = (second as any).contentType
-        finalUrl = (second as any).url
-        finalW = (second as any).width
-        finalH = (second as any).height
-        passes = 2
-      } else {
-        console.warn('Second pass failed, keeping first pass result:', (second as any).error)
-      }
-    }
+    // Single pass only per requirements (no additional credit usage)
 
     // Proceed to store final upscaled image
     const upscaledImageBuffer = finalBuf
@@ -307,8 +313,7 @@ serve(async (req) => {
     }
 
 // Deduct credits now that the task succeeded and we have a URL
-const creditsToDeduct = (passes || 1) * 2
-const newCredits = (profile.credits ?? 0) - creditsToDeduct
+const newCredits = (profile.credits ?? 0) - 2
 const { error: lateUpdateError } = await supabaseClient
   .from('profiles')
   .update({ credits: newCredits })
@@ -331,10 +336,7 @@ return new Response(
     success: true,
     upscaledImage: upscaledImageUrl,
     resolution: { width: finalW, height: finalH },
-    passes,
-    message: passes > 1 
-      ? "Image upscaled (2 passes) to meet target resolution. It will be saved to your collection shortly."
-      : "Image upscaled successfully! It will be permanently saved to your collection shortly.",
+    message: "Image upscaled successfully! It will be permanently saved to your collection shortly.",
     creditsRemaining: newCredits
   }),
   { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
