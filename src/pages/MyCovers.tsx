@@ -21,6 +21,8 @@ interface Creation {
   upscaled_image_url: string | null; // Permanently stored upscaled image
   cover_type?: string;
   ideogram_id?: string; // Store the Ideogram image ID for remixing
+  // Derived at runtime when bucket is private
+  signed_upscaled_url?: string | null;
 }
 
 const MyCovers = () => {
@@ -43,6 +45,32 @@ const MyCovers = () => {
     }
   }, [user]);
 
+  const signIfSupabase = async (rawUrl: string | null): Promise<string | null> => {
+    if (!rawUrl) return null;
+    try {
+      const u = new URL(rawUrl);
+      const isSupabaseStorage = u.hostname.endsWith('.supabase.co') && u.pathname.startsWith('/storage/v1/object/');
+      if (isSupabaseStorage && u.pathname.includes('/upscaled-covers/')) {
+        const publicPrefix = '/storage/v1/object/public/upscaled-covers/';
+        const splitToken = '/upscaled-covers/';
+        let objectPath = '';
+        if (u.pathname.includes(publicPrefix)) {
+          objectPath = u.pathname.substring(publicPrefix.length);
+        } else {
+          const idx = u.pathname.indexOf(splitToken);
+          if (idx !== -1) objectPath = u.pathname.substring(idx + splitToken.length);
+        }
+        if (objectPath) {
+          const { data: signed, error } = await supabase.storage
+            .from('upscaled-covers')
+            .createSignedUrl(objectPath, 60 * 60 * 6); // 6 hours
+          if (!error && signed?.signedUrl) return signed.signedUrl;
+        }
+      }
+    } catch {}
+    return rawUrl;
+  };
+
   const fetchCreations = async () => {
     try {
       const { data, error } = await supabase
@@ -57,7 +85,12 @@ const MyCovers = () => {
         return;
       }
 
-      setCreations(data || []);
+      const withSigned = await Promise.all((data || []).map(async (c) => ({
+        ...c,
+        signed_upscaled_url: await signIfSupabase(c.upscaled_image_url),
+      })));
+
+      setCreations(withSigned);
     } catch (error) {
       console.error("Error fetching creations:", error);
     } finally {
@@ -113,9 +146,8 @@ const MyCovers = () => {
     document.body.removeChild(link);
   };
 
-  // Since we only store upscaled images, just return the single upscaled image URL
   const getUpscaledImage = (creation: Creation): string | null => {
-    return creation.upscaled_image_url;
+    return creation.signed_upscaled_url ?? creation.upscaled_image_url;
   };
 
   const handleDelete = async (id: string) => {

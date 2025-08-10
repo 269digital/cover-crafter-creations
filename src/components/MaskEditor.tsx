@@ -365,8 +365,36 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       const editedUrl: string = editJson.storedImageUrl || editJson.editedImage;
       if (!editedUrl) throw new Error('Missing edited image URL');
 
+      // If the edited image is stored in our private bucket, sign it before display
+      const signIfSupabase = async (rawUrl: string): Promise<string> => {
+        try {
+          const u = new URL(rawUrl);
+          const isSupabaseStorage = u.hostname.endsWith('.supabase.co') && u.pathname.startsWith('/storage/v1/object/');
+          if (isSupabaseStorage && u.pathname.includes('/upscaled-covers/')) {
+            const publicPrefix = '/storage/v1/object/public/upscaled-covers/';
+            const splitToken = '/upscaled-covers/';
+            let objectPath = '';
+            if (u.pathname.includes(publicPrefix)) {
+              objectPath = u.pathname.substring(publicPrefix.length);
+            } else {
+              const idx = u.pathname.indexOf(splitToken);
+              if (idx !== -1) objectPath = u.pathname.substring(idx + splitToken.length);
+            }
+            if (objectPath) {
+              const { data: signed, error } = await supabase.storage
+                .from('upscaled-covers')
+                .createSignedUrl(objectPath, 60 * 60 * 6);
+              if (!error && signed?.signedUrl) return signed.signedUrl;
+            }
+          }
+        } catch {}
+        return rawUrl;
+      };
+
+      const signedEditedUrl = await signIfSupabase(editedUrl);
+
       // Update the editor to show the new fixed image and reset mask
-      setDisplayedUrl(editedUrl);
+      setDisplayedUrl(signedEditedUrl);
       clearMask();
       toast.success('Fix applied. Review and Upscale when ready.');
     } catch (e: any) {

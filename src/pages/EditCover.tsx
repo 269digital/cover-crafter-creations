@@ -75,16 +75,44 @@ const EditCover: React.FC = () => {
           setLoading(false);
           return;
         }
-        setOriginalUrl(url);
+
+        // If the URL points to our Supabase Storage bucket, generate a signed URL
+        const signIfSupabase = async (rawUrl: string): Promise<string> => {
+          try {
+            const u = new URL(rawUrl);
+            const isSupabaseStorage = u.hostname.endsWith('.supabase.co') && u.pathname.startsWith('/storage/v1/object/');
+            if (isSupabaseStorage && u.pathname.includes('/upscaled-covers/')) {
+              const publicPrefix = '/storage/v1/object/public/upscaled-covers/';
+              const splitToken = '/upscaled-covers/';
+              let objectPath = '';
+              if (u.pathname.includes(publicPrefix)) {
+                objectPath = u.pathname.substring(publicPrefix.length);
+              } else {
+                const idx = u.pathname.indexOf(splitToken);
+                if (idx !== -1) objectPath = u.pathname.substring(idx + splitToken.length);
+              }
+              if (objectPath) {
+                const { data: signed, error: signError } = await supabase.storage
+                  .from('upscaled-covers')
+                  .createSignedUrl(objectPath, 60 * 60 * 6); // 6 hours
+                if (!signError && signed?.signedUrl) return signed.signedUrl;
+              }
+            }
+          } catch {}
+          return rawUrl;
+        };
+
+        const finalUrl = await signIfSupabase(url);
+        setOriginalUrl(finalUrl);
         setCoverType(data.cover_type || 'eBook Cover');
 
-        const host = new URL(url).hostname;
+        const host = new URL(finalUrl).hostname;
         const isIdeogram = host === 'ideogram.ai' || host.endsWith('.ideogram.ai');
         if (isIdeogram) {
           const { data: session } = await supabase.auth.getSession();
           const accessToken = session.session?.access_token;
           if (!accessToken) throw new Error('Not authenticated');
-          const proxied = `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(url)}`;
+          const proxied = `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(finalUrl)}`;
           const resp = await fetch(proxied, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
@@ -93,7 +121,7 @@ const EditCover: React.FC = () => {
           objectUrl = URL.createObjectURL(blob);
           if (!cancelled) setImageUrl(objectUrl);
         } else {
-          setImageUrl(url);
+          setImageUrl(finalUrl);
         }
       } catch (e: any) {
         setError(e?.message || 'Failed to load cover');
