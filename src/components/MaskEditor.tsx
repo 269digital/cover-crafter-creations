@@ -415,6 +415,27 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
   return (
     <div className="space-y-4">
+      {/* Mobile-only controls at top */}
+      <div className="md:hidden space-y-4">
+        <div className="space-y-2">
+          <Label>Brush size</Label>
+          <Slider value={[brushSize]} min={5} max={150} step={1} onValueChange={(v) => setBrushSize(v[0])} />
+        </div>
+        <Button variant="secondary" onClick={clearMask} className="w-full">
+          Clear Mask
+        </Button>
+        <Button onClick={handleGenerateFix} className="w-full" disabled={submitting}>
+          {submitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing... (May take up to 30 seconds...)
+            </>
+          ) : (
+            'Generate Fix & Upscale'
+          )}
+        </Button>
+      </div>
+
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <div className="rounded-lg border bg-card p-3">
@@ -435,7 +456,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
             </div>
           </div>
         </div>
-        <div className="lg:col-span-1 space-y-4 w-full max-w-md mx-auto lg:max-w-none">
+        <div className="hidden md:block lg:col-span-1 space-y-4 w-full max-w-md mx-auto lg:max-w-none">
           <div className="space-y-2">
             <Label>Brush size</Label>
             <Slider value={[brushSize]} min={5} max={150} step={1} onValueChange={(v) => setBrushSize(v[0])} />
