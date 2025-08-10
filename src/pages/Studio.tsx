@@ -279,6 +279,17 @@ const Studio = () => {
     navigate("/");
   };
 
+  const captureEditViewportHintFromEvent = (e: React.MouseEvent) => {
+    try {
+      const card = (e.currentTarget as HTMLElement).closest('.relative.group') as HTMLElement | null;
+      const img = card?.querySelector('img') as HTMLImageElement | null;
+      if (img) {
+        const rect = img.getBoundingClientRect();
+        sessionStorage.setItem('editViewportHint', JSON.stringify({ width: Math.round(rect.width), height: Math.round(rect.height) }));
+      }
+    } catch {}
+  };
+
   const handleEdit = async (imageUrl: string) => {
     try {
       // Try to find the creation record that contains this image URL
@@ -601,7 +612,7 @@ const Studio = () => {
                             <Button
                               size="sm"
                               variant="secondary"
-                              onClick={() => handleEdit(image.url)}
+                              onClick={(e) => { captureEditViewportHintFromEvent(e); handleEdit(image.url); }}
                               className="w-full bg-white/95 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold text-xs"
                             >
                               <Wand2 className="h-3 w-3 mr-1" />
@@ -646,7 +657,7 @@ const Studio = () => {
                             <Button
                               size="lg"
                               variant="secondary"
-                              onClick={() => handleEdit(image.url)}
+                              onClick={(e) => { captureEditViewportHintFromEvent(e); handleEdit(image.url); }}
                               className="w-full min-w-[120px] bg-white/90 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold"
                             >
                               <Wand2 className="h-4 w-4 mr-2" />

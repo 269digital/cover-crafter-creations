@@ -40,6 +40,20 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const { refreshCredits } = useAuth();
 
+  // Keep the preview at the same CSS size as Studio when available
+  const [fixedSize, setFixedSize] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    try {
+      const hint = sessionStorage.getItem('editViewportHint');
+      if (hint) {
+        const { width, height } = JSON.parse(hint);
+        if (typeof width === 'number' && typeof height === 'number') {
+          setFixedSize({ w: Math.round(width), h: Math.round(height) });
+        }
+      }
+    } catch {}
+  }, []);
+
   // Load the image once
   useEffect(() => {
     let mounted = true;
@@ -254,7 +268,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
           <div className="rounded-lg border bg-card p-3">
             <div
               ref={containerRef}
-              className={`w-full relative ${coverType === 'eBook Cover' ? 'aspect-[2/3]' : 'aspect-square'}`}
+              className={`relative ${fixedSize ? '' : ('w-full ' + (coverType === 'eBook Cover' ? 'aspect-[2/3]' : 'aspect-square'))}`}
+              style={fixedSize ? { width: fixedSize.w, height: fixedSize.h } : undefined}
             >
               <canvas
                 ref={previewCanvasRef}
