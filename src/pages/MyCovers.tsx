@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Download, Image, Eye, X, Moon, Sun } from "lucide-react";
+import { CreditCard, Download, Image, Eye, X, Moon, Sun, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -211,6 +211,15 @@ const MyCovers = () => {
                        >
                          <Download className="h-4 w-4 mr-1" />
                          Download HD
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="secondary"
+                         onClick={() => navigate(`/edit/${creation.id}`)}
+                         className="min-w-[90px]"
+                       >
+                         <Wand2 className="h-4 w-4 mr-1" />
+                         Edit
                        </Button>
                      </div>
                      <div className="absolute top-2 right-2">

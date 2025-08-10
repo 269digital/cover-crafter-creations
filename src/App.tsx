@@ -12,6 +12,7 @@ import BuyCredits from "./pages/BuyCredits";
 import MyCovers from "./pages/MyCovers";
 import Success from "./pages/Success";
 import VerifyPayment from "./pages/VerifyPayment";
+import EditCover from "./pages/EditCover";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/my-covers" element={<MyCovers />} />
               <Route path="/success" element={<Success />} />
               <Route path="/verify-payment" element={<VerifyPayment />} />
+              <Route path="/edit/:coverId" element={<EditCover />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

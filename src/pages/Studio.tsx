@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Palette, Sparkles, CreditCard, Download, Heart, Zap, Moon, Sun } from "lucide-react";
+import { Palette, Sparkles, CreditCard, Download, Heart, Zap, Moon, Sun, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -279,6 +279,49 @@ const Studio = () => {
     navigate("/");
   };
 
+  const handleEdit = async (imageUrl: string) => {
+    try {
+      // Try to find the creation record that contains this image URL
+      const { data: existing, error: findError } = await supabase
+        .from('creations')
+        .select('id')
+        .eq('user_id', user.id)
+        .or(`image_url1.eq."${imageUrl}",image_url2.eq."${imageUrl}",image_url3.eq."${imageUrl}",image_url4.eq."${imageUrl}"`)
+        .order('created_at', { ascending: false })
+        .maybeSingle();
+
+      if (existing?.id) {
+        navigate(`/edit/${existing.id}`);
+        return;
+      }
+
+      // Fallback: create a new creation record for this single image
+      const { data: inserted, error: insertError } = await supabase
+        .from('creations')
+        .insert({
+          user_id: user.id,
+          prompt: `${genre} ${coverType === "Album Cover" ? "album" : coverType === "Audiobook Cover" ? "audiobook" : "book"} cover for \"${title}\" by ${author}. ${style} style. ${description}`,
+          image_url1: imageUrl,
+          cover_type: coverType,
+        })
+        .select('id')
+        .single();
+
+      if (insertError || !inserted?.id) {
+        throw new Error(insertError?.message || 'Unable to prepare edit');
+      }
+
+      navigate(`/edit/${inserted.id}`);
+    } catch (e: any) {
+      console.error('Edit prep error:', e);
+      toast({
+        title: 'Unable to open editor',
+        description: e?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Redirect to auth if not authenticated
   React.useEffect(() => {
     if (!loading && !user) {
@@ -521,7 +564,7 @@ const Studio = () => {
                             Upscaled
                           </div>
                         )}
-                         {/* Mobile buttons - always visible */}
+                          {/* Mobile buttons - always visible */}
                         <div className="absolute bottom-2 left-2 right-2 sm:hidden">
                           <div className="flex gap-1">
                             {!image.isUpscaled ? (
@@ -555,6 +598,15 @@ const Studio = () => {
                                 Download HD
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleEdit(image.url)}
+                              className="w-full bg-white/95 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold text-xs"
+                            >
+                              <Wand2 className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
                           </div>
                         </div>
                         {/* Desktop buttons - hover overlay */}
@@ -591,6 +643,15 @@ const Studio = () => {
                                 Download HD
                               </Button>
                             )}
+                            <Button
+                              size="lg"
+                              variant="secondary"
+                              onClick={() => handleEdit(image.url)}
+                              className="w-full min-w-[120px] bg-white/90 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold"
+                            >
+                              <Wand2 className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
                           </div>
                         </div>
                       </div>
