@@ -45,17 +45,19 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushSize, setBrushSize] = useState(30);
   const [mode, setMode] = useState<Mode>("remove");
-  const [submitting, setSubmitting] = useState(false);
+  const [displayedUrl, setDisplayedUrl] = useState<string>(imageUrl);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isUpscaling, setIsUpscaling] = useState(false);
   const { refreshCredits } = useAuth();
   const navigate = useNavigate();
 
   // Responsive container height based on cover type aspect ratio
   const [containerHeight, setContainerHeight] = useState<number>(PREVIEW_SIZE.h);
 
-  // Load the image once
+  // Load the image when displayedUrl changes
   useEffect(() => {
     let mounted = true;
-    loadImage(imageUrl).then((img) => {
+    loadImage(displayedUrl).then((img) => {
       if (!mounted) return;
       setImgEl(img);
 
@@ -66,6 +68,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       maskCanvas.height = img.naturalHeight;
       mctx.fillStyle = '#ffffff';
       mctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+      hasPaintedRef.current = false;
 
       // Set preview size based on container and draw (rAF to ensure layout ready)
       requestAnimationFrame(() => {
@@ -82,7 +85,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     };
     window.addEventListener('resize', onResize);
     return () => { mounted = false; window.removeEventListener('resize', onResize); };
-  }, [imageUrl]);
+  }, [displayedUrl]);
 
 
   // Ensure initial draw when image and layout are ready
@@ -303,46 +306,15 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
   const handleGenerateFix = async () => {
     try {
-      setSubmitting(true);
-
+      setIsGenerating(true);
       if (!imgEl) throw new Error('Image not ready');
-      if (!hasPaintedRef.current) {
-        const srcUrl = originalUrl || imageUrl;
-        const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
-          body: { imageUrl: srcUrl, coverId }
-        });
 
-        if (upError || !upData?.success) {
-          console.error('Upscale error:', upError || upData);
-          throw new Error((upError as any)?.message || upData?.error || 'Upscale failed');
-        }
-
-        await refreshCredits();
-        navigate(`/my-covers?waitFor=${coverId}`);
-        return;
-      }
-
-      // Normalize mask values and check if the user painted anything
+      // Normalize mask and check if the user painted anything
       const isUntouched = binarizeAndCheckUntouched();
-
-      // If mask ended up with no black after normalization, skip edit and just upscale
       if (isUntouched) {
-        const srcUrl = originalUrl || imageUrl;
-        const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
-          body: { imageUrl: srcUrl, coverId }
-        });
-
-        if (upError || !upData?.success) {
-          console.error('Upscale error:', upError || upData);
-          throw new Error((upError as any)?.message || upData?.error || 'Upscale failed');
-        }
-
-        await refreshCredits();
-        navigate(`/my-covers?waitFor=${coverId}`);
+        toast("No changes made to cover");
         return;
       }
-
-      
 
       // Export mask as PNG (full resolution) after binarization
       const maskBlob = await new Promise<Blob | null>((resolve) =>
@@ -391,11 +363,23 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       const editedUrl: string = editJson.storedImageUrl || editJson.editedImage;
       if (!editedUrl) throw new Error('Missing edited image URL');
 
-      
+      // Update the editor to show the new fixed image and reset mask
+      setDisplayedUrl(editedUrl);
+      clearMask();
+      toast.success('Fix applied. Review and Upscale when ready.');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to generate fix');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-      // Invoke upscaler (deducts 2 credits) and update creation via coverId
+  const handleUpscale = async () => {
+    try {
+      setIsUpscaling(true);
+      const srcUrl = displayedUrl || originalUrl || imageUrl;
       const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
-        body: { imageUrl: editedUrl, coverId }
+        body: { imageUrl: srcUrl, coverId }
       });
 
       if (upError || !upData?.success) {
@@ -404,13 +388,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       }
 
       await refreshCredits();
-      
       navigate(`/my-covers?waitFor=${coverId}`);
-
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to process edit');
+      toast.error(e?.message || 'Upscale failed');
     } finally {
-      setSubmitting(false);
+      setIsUpscaling(false);
     }
   };
 
@@ -425,14 +407,24 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         <Button variant="secondary" onClick={clearMask} className="w-full">
           Clear Mask
         </Button>
-        <Button onClick={handleGenerateFix} className="w-full" disabled={submitting}>
-          {submitting ? (
+        <Button onClick={handleGenerateFix} className="w-full" disabled={isGenerating || isUpscaling}>
+          {isGenerating ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing... (May take up to 30 seconds...)
+              Generating fix...
             </>
           ) : (
-            'Generate Fix & Upscale'
+            'Generate Fix'
+          )}
+        </Button>
+        <Button onClick={handleUpscale} className="w-full" disabled={isUpscaling || isGenerating}>
+          {isUpscaling ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Upscaling...
+            </>
+          ) : (
+            'Upscale'
           )}
         </Button>
         <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
@@ -476,14 +468,24 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
           
 
-          <Button onClick={handleGenerateFix} className="w-full" disabled={submitting}>
-            {submitting ? (
+          <Button onClick={handleGenerateFix} className="w-full" disabled={isGenerating || isUpscaling}>
+            {isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing... (May take up to 30 seconds...)
+                Generating fix...
               </>
             ) : (
-              'Generate Fix & Upscale'
+              'Generate Fix'
+            )}
+          </Button>
+          <Button onClick={handleUpscale} className="w-full" disabled={isUpscaling || isGenerating}>
+            {isUpscaling ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Upscaling...
+              </>
+            ) : (
+              'Upscale'
             )}
           </Button>
           <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
