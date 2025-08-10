@@ -636,7 +636,7 @@ const Studio = () => {
                               ) : (
                                 <>
                                   <Wand2 className="h-3 w-3 mr-1" />
-                                  Edit (-2 credits)
+                                  Edit
                                 </>
                               )}
                             </Button>
@@ -691,7 +691,7 @@ const Studio = () => {
                               ) : (
                                 <>
                                   <Wand2 className="h-4 w-4 mr-2" />
-                                  Edit (-2 credits)
+                                  Edit
                                 </>
                               )}
                             </Button>
