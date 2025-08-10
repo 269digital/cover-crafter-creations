@@ -5,6 +5,7 @@ import { MaskEditor } from "@/components/MaskEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "next-themes";
@@ -192,6 +193,13 @@ const EditCover: React.FC = () => {
       </header>
 
       <main className="w-full p-0">
+        <section className="container mx-auto px-4 py-4">
+          <Alert>
+            <AlertDescription>
+              How to use: Paint over areas you want changed (red overlay), then click "Generate Fix". When satisfied, click "Upscale" to save. Tip: Use "Clear Mask" to start over.
+            </AlertDescription>
+          </Alert>
+        </section>
         {imageUrl && originalUrl && coverId && (
           <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} coverType={coverType} />
         )}
