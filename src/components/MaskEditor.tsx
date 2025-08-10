@@ -262,7 +262,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       const form = new FormData();
       form.append('image_url', originalUrl);
       form.append('mask', maskBlob, 'mask.png');
-      form.append('prompt', prompt);
+      const promptToSend = (prompt || '').trim() || DEFAULT_PROMPT;
+      form.append('prompt', promptToSend);
       form.append('cover_id', coverId);
 
       const { data: session } = await supabase.auth.getSession();
