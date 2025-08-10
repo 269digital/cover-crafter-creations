@@ -18,7 +18,7 @@ const BuyCredits = () => {
       name: "Starter Pack",
       credits: 8,
       price: "$10",
-      description: "Perfect for trying out Covers by AI",
+      description: "Perfect for trying out Cover Artisan",
       subtitle: "(Up to 2 complete cover projects)",
       features: ["8 AI-generated covers", "High-resolution downloads", "Commercial use rights"]
     },

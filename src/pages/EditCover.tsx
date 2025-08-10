@@ -33,7 +33,7 @@ const EditCover: React.FC = () => {
   const [coverType, setCoverType] = useState<string>('eBook Cover');
 
   useEffect(() => {
-    document.title = `Edit Cover | Covers by AI`;
+    document.title = `Edit Cover | Cover Artisan`;
   }, []);
 
   useEffect(() => {
