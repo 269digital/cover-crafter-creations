@@ -295,14 +295,20 @@ const Studio = () => {
       // Try to find the creation record that contains this image URL
       const { data: existing, error: findError } = await supabase
         .from('creations')
-        .select('id')
+        .select('id,image_url1,image_url2,image_url3,image_url4')
         .eq('user_id', user.id)
         .or(`image_url1.eq."${imageUrl}",image_url2.eq."${imageUrl}",image_url3.eq."${imageUrl}",image_url4.eq."${imageUrl}"`)
         .order('created_at', { ascending: false })
         .maybeSingle();
 
       if (existing?.id) {
-        navigate(`/edit/${existing.id}`);
+        let idx = 1;
+        if (existing.image_url1 === imageUrl) idx = 1;
+        else if (existing.image_url2 === imageUrl) idx = 2;
+        else if (existing.image_url3 === imageUrl) idx = 3;
+        else if (existing.image_url4 === imageUrl) idx = 4;
+
+        navigate(`/edit/${existing.id}?img=${idx}`);
         return;
       }
 
@@ -322,7 +328,7 @@ const Studio = () => {
         throw new Error(insertError?.message || 'Unable to prepare edit');
       }
 
-      navigate(`/edit/${inserted.id}`);
+      navigate(`/edit/${inserted.id}?img=1`);
     } catch (e: any) {
       console.error('Edit prep error:', e);
       toast({

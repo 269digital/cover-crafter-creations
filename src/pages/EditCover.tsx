@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MaskEditor } from "@/components/MaskEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,7 @@ interface Creation {
 const EditCover: React.FC = () => {
   const { coverId } = useParams<{ coverId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { credits, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,17 @@ const EditCover: React.FC = () => {
           setLoading(false);
           return;
         }
-        const url = data.upscaled_image_url || data.image_url1 || data.image_url2 || data.image_url3 || data.image_url4;
+        let url = null as string | null;
+        const imgParam = Number(searchParams.get('img'));
+        if (!Number.isNaN(imgParam)) {
+          if (imgParam === 1) url = data.image_url1;
+          else if (imgParam === 2) url = data.image_url2;
+          else if (imgParam === 3) url = data.image_url3;
+          else if (imgParam === 4) url = data.image_url4;
+        }
+        if (!url) {
+          url = data.upscaled_image_url || data.image_url1 || data.image_url2 || data.image_url3 || data.image_url4;
+        }
         if (!url) {
           setError('No image available to edit');
           setLoading(false);
@@ -94,7 +105,7 @@ const EditCover: React.FC = () => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [coverId]);
+  }, [coverId, searchParams]);
 
   if (loading) {
     return (
