@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Palette, Sparkles, BookOpen, CreditCard } from "lucide-react";
+import { Palette, Sparkles, BookOpen, CreditCard, Edit3 } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -56,7 +56,7 @@ const Index = () => {
         </div>
 
         {/* Features */}
-        <div className="grid md:grid-cols-3 gap-6 mb-20 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-4 gap-6 mb-20 max-w-5xl mx-auto">
           <Card className="bg-white/5 backdrop-blur-md border-white/10 text-white shadow-card hover:bg-white/10 transition-all duration-300">
             <CardHeader className="text-center p-8">
               <BookOpen className="h-14 w-14 text-accent mb-6 mx-auto" />
@@ -73,6 +73,16 @@ const Index = () => {
               <CardTitle className="text-xl mb-3">AI-Powered Design</CardTitle>
               <CardDescription className="text-white/75 leading-relaxed">
                 Advanced AI creates professional covers with perfect typography and composition
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="bg-white/5 backdrop-blur-md border-white/10 text-white shadow-card hover:bg-white/10 transition-all duration-300">
+            <CardHeader className="text-center p-8">
+              <Edit3 className="h-14 w-14 text-accent mb-6 mx-auto" />
+              <CardTitle className="text-xl mb-3">Edit Your Covers</CardTitle>
+              <CardDescription className="text-white/75 leading-relaxed">
+                Refine results with our built‑in editor — erase, restore, and upscale to perfection.
               </CardDescription>
             </CardHeader>
           </Card>
