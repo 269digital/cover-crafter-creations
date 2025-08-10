@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Palette, Sparkles, CreditCard, Download, Heart, Zap, Moon, Sun, Wand2 } from "lucide-react";
+import { Palette, Sparkles, CreditCard, Download, Heart, Zap, Moon, Sun, Wand2, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +35,7 @@ const Studio = () => {
     isUpscaled: boolean;
     isUpscaling: boolean;
   }>>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const aspectRatio = coverType === "eBook Cover" ? "ASPECT_2_3" : "ASPECT_1_1";
   const aspectClass = coverType === "eBook Cover" ? "aspect-[2/3]" : "aspect-square";
@@ -290,7 +291,8 @@ const Studio = () => {
     } catch {}
   };
 
-  const handleEdit = async (imageUrl: string) => {
+  const handleEdit = async (imageUrl: string, index?: number) => {
+    setEditingIndex(index ?? null);
     try {
       // Try to find the creation record that contains this image URL
       const { data: existing, error: findError } = await supabase
@@ -336,6 +338,8 @@ const Studio = () => {
         description: e?.message || 'Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setEditingIndex(null);
     }
   };
 
@@ -555,7 +559,10 @@ const Studio = () => {
                 disabled={generating}
               >
                 {generating ? (
-                  "Generating... (May take up to 30 seconds)"
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating... (May take up to 30 seconds)
+                  </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 mr-2" />
@@ -618,11 +625,21 @@ const Studio = () => {
                             <Button
                               size="sm"
                               variant="secondary"
-                              onClick={(e) => { captureEditViewportHintFromEvent(e); handleEdit(image.url); }}
+                              onClick={(e) => { captureEditViewportHintFromEvent(e); handleEdit(image.url, index); }}
+                              disabled={editingIndex === index}
                               className="w-full bg-white/95 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold text-xs"
                             >
-                              <Wand2 className="h-3 w-3 mr-1" />
-                              Edit
+                              {editingIndex === index ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  Editing... (May take up to 30 seconds)
+                                </>
+                              ) : (
+                                <>
+                                  <Wand2 className="h-3 w-3 mr-1" />
+                                  Edit
+                                </>
+                              )}
                             </Button>
                           </div>
                         </div>
@@ -663,11 +680,21 @@ const Studio = () => {
                             <Button
                               size="lg"
                               variant="secondary"
-                              onClick={(e) => { captureEditViewportHintFromEvent(e); handleEdit(image.url); }}
+                              onClick={(e) => { captureEditViewportHintFromEvent(e); handleEdit(image.url, index); }}
+                              disabled={editingIndex === index}
                               className="w-full min-w-[120px] bg-white/90 text-gray-900 hover:bg-white border-0 shadow-lg font-semibold"
                             >
-                              <Wand2 className="h-4 w-4 mr-2" />
-                              Edit
+                              {editingIndex === index ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Editing... (May take up to 30 seconds)
+                                </>
+                              ) : (
+                                <>
+                                  <Wand2 className="h-4 w-4 mr-2" />
+                                  Edit
+                                </>
+                              )}
                             </Button>
                           </div>
                         </div>
