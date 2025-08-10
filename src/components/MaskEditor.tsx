@@ -419,8 +419,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
   return (
     <div className="space-y-4">
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
           <div className="rounded-lg border bg-card p-3">
             <div
               ref={containerRef}
@@ -439,7 +439,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
             </div>
           </div>
         </div>
-        <div className="md:col-span-1 space-y-4">
+        <div className="lg:col-span-1 space-y-4 w-full max-w-md mx-auto lg:max-w-none">
           <div className="space-y-2">
             <Label>Brush size</Label>
             <Slider value={[brushSize]} min={5} max={150} step={1} onValueChange={(v) => setBrushSize(v[0])} />
