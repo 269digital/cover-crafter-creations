@@ -536,7 +536,7 @@ const Studio = () => {
                 <Label htmlFor="description">Describe the Cover Art</Label>
                 <Textarea
                   id="description"
-                  placeholder={coverType === "Album Cover" ? "Describe the visual elements you want on your album cover (e.g., band performance, abstract art, iconic symbol...)" : coverType === "Audiobook Cover" ? "Describe the visual elements you want on your audiobook cover (e.g., narrator theme, story mood, symbolic imagery...)" : "Describe the visual elements you want on your book cover (e.g., dark forest, mystical creatures, ancient castle...)"}
+                  placeholder={coverType === "Album Cover" ? "Describe the visual elements you want on your album cover (e.g., band performance, abstract art, iconic symbol...)" : coverType === "Audiobook Cover" ? "Describe the visual elements you want on your audiobook cover (e.g., narrator theme, story mood, symbolic imagery...)" : "Describe the visual elements you want on your cover (e.g., dark forest, mystical creatures, ancient castle...)"}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
@@ -547,7 +547,7 @@ const Studio = () => {
               <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Important:</strong> Only upscaled book covers will be saved and be downloadable in My Covers.
+                  <strong>Important:</strong> Only upscaled covers will be saved and be downloadable in My Covers.
                 </AlertDescription>
               </Alert>
 
