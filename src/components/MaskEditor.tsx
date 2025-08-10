@@ -84,6 +84,26 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     return () => { mounted = false; window.removeEventListener('resize', onResize); };
   }, [imageUrl]);
 
+  // Ensure initial draw when image and layout are ready
+  useEffect(() => {
+    if (!imgEl) return;
+    requestAnimationFrame(() => {
+      resizePreview();
+      drawPreview();
+    });
+  }, [imgEl, fixedSize, coverType]);
+
+  // Observe container size changes to keep canvas in sync
+  useEffect(() => {
+    if (!imgEl || !containerRef.current) return;
+    const ro = new ResizeObserver(() => {
+      resizePreview();
+      drawPreview();
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [imgEl, fixedSize, coverType]);
+
   const resizePreview = () => {
     if (!imgEl || !containerRef.current || !previewCanvasRef.current) return;
 
@@ -100,8 +120,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     canvas.width = Math.floor(cssW * dpr);
     canvas.height = Math.floor(cssH * dpr);
 
-    // Compute image draw scale (contain) and offsets inside the aspect box (in CSS pixels)
-    const scaleToFit = Math.min(cssW / imgEl.naturalWidth, cssH / imgEl.naturalHeight);
+    // Compute image draw scale and offsets inside the aspect box (match Studio display)
+    const fitW = cssW / imgEl.naturalWidth;
+    const fitH = cssH / imgEl.naturalHeight;
+    const useCover = coverType === 'eBook Cover';
+    const scaleToFit = useCover ? Math.max(fitW, fitH) : Math.min(fitW, fitH);
     const drawW = imgEl.naturalWidth * scaleToFit;
     const drawH = imgEl.naturalHeight * scaleToFit;
     const offX = (cssW - drawW) / 2;
