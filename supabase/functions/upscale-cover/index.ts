@@ -134,15 +134,14 @@ serve(async (req) => {
     console.log('Calling Ideogram Upscale API')
     const formData = new FormData()
     
-    // Add the image file
-    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
-    formData.append('image_file', imageBlob, 'image.jpg')
+    // Add the image file (preserve original content type if possible)
+    const srcContentType = imageResponse.headers.get('content-type') || 'image/jpeg'
+    const fileExt = srcContentType.includes('png') ? 'png' : (srcContentType.includes('webp') ? 'webp' : 'jpg')
+    const imageBlob = new Blob([imageBuffer], { type: srcContentType })
+    formData.append('image_file', imageBlob, `image.${fileExt}`)
     
-    // Add the image request parameters
-    const imageRequest = {
-      prompt: "Upscale only. Preserve the subject's identity and facial features. Do not alter content or style.",
-      magic_prompt: 'OFF'
-    }
+    // Minimal request payload (defaults to 2x on Ideogram)
+    const imageRequest = {}
     formData.append('image_request', JSON.stringify(imageRequest))
 
     const upscaleResponse = await fetch('https://api.ideogram.ai/upscale', {
