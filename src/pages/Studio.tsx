@@ -553,7 +553,7 @@ const Studio = () => {
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Cover (Free - Testing Mode)
+                    Generate Cover (-2 credits)
                   </>
                 )}
               </Button>
