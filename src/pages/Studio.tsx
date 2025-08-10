@@ -228,8 +228,7 @@ const Studio = () => {
     try {
         const { data, error } = await supabase.functions.invoke('upscale-cover', {
         body: { 
-          imageUrl: imageInfo.url,
-          scale: 2
+          imageUrl: imageInfo.url
         }
       });
 

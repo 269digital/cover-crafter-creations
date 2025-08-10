@@ -141,9 +141,7 @@ serve(async (req) => {
     // Add the image request parameters
     const imageRequest = {
       prompt: "Upscale only. Preserve the subject's identity and facial features. Do not alter content or style.",
-      magic_prompt_option: 'OFF',
-      upscale_factor: Number(scale) || 2,
-      scale: Number(scale) || 2
+      magic_prompt: 'OFF'
     }
     formData.append('image_request', JSON.stringify(imageRequest))
 

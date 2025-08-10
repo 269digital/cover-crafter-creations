@@ -411,7 +411,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         ? (originalUrl || imageUrl)
         : (displayedUrl || originalUrl || imageUrl);
       const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
-        body: { imageUrl: srcUrl, coverId, scale: 2 }
+        body: { imageUrl: srcUrl, coverId }
       });
 
       if (upError || !upData?.success) {
