@@ -376,7 +376,7 @@ const Studio = () => {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
               <Palette className="h-6 w-6 text-white" />
-              <h1 className="text-xl font-bold text-white font-brand">Cover Artisan</h1>
+              <h1 className="text-xl font-bold text-white">Cover Studio</h1>
               <Button
                 variant="ghost"
                 size="sm"

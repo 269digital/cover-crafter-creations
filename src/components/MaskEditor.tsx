@@ -375,7 +375,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
           <p className="text-xs text-muted-foreground">Anything you paint will be removed and replaced by AI.</p>
 
           <Button onClick={handleGenerateFix} className="w-full" disabled={submitting}>
-            {submitting ? 'Processing...' : 'Generate Fix & Upscale'}
+            {submitting ? 'Processing...' : 'Generate Fix & Upscale (-2 credits)'}
           </Button>
           {/* Upscale and Download buttons will be available from the Studio-like flow after upscaling */}
 
