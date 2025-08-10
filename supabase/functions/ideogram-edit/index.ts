@@ -44,6 +44,27 @@ serve(async (req) => {
 
     const user = userData.user
 
+    // Check user credits (1 credit per edit)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('credits')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (profileError || !profile) {
+      return new Response(
+        JSON.stringify({ error: 'Unable to verify credits' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if ((profile.credits ?? 0) < 1) {
+      return new Response(
+        JSON.stringify({ error: 'Insufficient credits. You need 1 credit to apply an edit.' }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Expect multipart form-data with: mask (file), prompt (text), cover_id (text), and either image (file) or image_url (text)
     const form = await req.formData()
     let imageFile = form.get('image') as File | null
