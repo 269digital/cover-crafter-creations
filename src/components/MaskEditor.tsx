@@ -306,7 +306,6 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
       if (!imgEl) throw new Error('Image not ready');
       if (!hasPaintedRef.current) {
-        toast.info('Upscaling...', { duration: 1200 });
         const srcUrl = originalUrl || imageUrl;
         const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
           body: { imageUrl: srcUrl, coverId }
@@ -318,7 +317,6 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         }
 
         await refreshCredits();
-        toast.success('Fixed and upscaled! Redirecting to My Covers...');
         navigate(`/my-covers?waitFor=${coverId}`);
         return;
       }
@@ -328,7 +326,6 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
       // If mask ended up with no black after normalization, skip edit and just upscale
       if (isUntouched) {
-        toast.info('Upscaling...', { duration: 1200 });
         const srcUrl = originalUrl || imageUrl;
         const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
           body: { imageUrl: srcUrl, coverId }
@@ -340,12 +337,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         }
 
         await refreshCredits();
-        toast.success('Fixed and upscaled! Redirecting to My Covers...');
         navigate(`/my-covers?waitFor=${coverId}`);
         return;
       }
 
-      toast.info('Applying edit...', { duration: 1200 });
+      
 
       // Export mask as PNG (full resolution) after binarization
       const maskBlob = await new Promise<Blob | null>((resolve) =>
@@ -394,7 +390,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       const editedUrl: string = editJson.storedImageUrl || editJson.editedImage;
       if (!editedUrl) throw new Error('Missing edited image URL');
 
-      toast.info('Upscaling...', { duration: 1200 });
+      
 
       // Invoke upscaler (deducts 2 credits) and update creation via coverId
       const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
@@ -407,7 +403,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       }
 
       await refreshCredits();
-      toast.success('Fixed and upscaled! Redirecting to My Covers...');
+      
       navigate(`/my-covers?waitFor=${coverId}`);
 
     } catch (e: any) {
