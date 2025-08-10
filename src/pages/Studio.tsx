@@ -444,7 +444,7 @@ const Studio = () => {
                 Create Your Cover
               </CardTitle>
               <CardDescription>
-                Design a stunning cover for your book with AI assistance
+                Design a stunning cover with AI assistance
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
