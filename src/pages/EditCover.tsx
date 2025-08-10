@@ -5,7 +5,7 @@ import { MaskEditor } from "@/components/MaskEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "next-themes";
 import { Palette, CreditCard, Sun, Moon } from "lucide-react";
@@ -199,13 +199,6 @@ const EditCover: React.FC = () => {
         <p className="text-muted-foreground hidden md:block">
           Use your cursor to paint out the area you want to remove. To start over, click Clear Mask.
         </p>
-        {/* Important Notice (matching Studio style) */}
-        <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-          <CreditCard className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Important:</strong> You will lose your cover if you navigate away from this page without upscaling.
-          </AlertDescription>
-        </Alert>
         {imageUrl && originalUrl && coverId && (
           <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} coverType={coverType} />
         )}

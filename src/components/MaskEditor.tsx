@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, CreditCard } from "lucide-react";
 
 interface MaskEditorProps {
   imageUrl: string; // display URL (may be proxied)
@@ -434,6 +435,12 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
             'Generate Fix & Upscale'
           )}
         </Button>
+        <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+          <CreditCard className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Important:</strong> You will lose your cover if you navigate away from this page without upscaling.
+          </AlertDescription>
+        </Alert>
       </div>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
@@ -479,6 +486,12 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
               'Generate Fix & Upscale'
             )}
           </Button>
+          <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+            <CreditCard className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Important:</strong> You will lose your cover if you navigate away from this page without upscaling.
+            </AlertDescription>
+          </Alert>
           {/* Upscale and Download buttons will be available from the Studio-like flow after upscaling */}
 
         </div>
