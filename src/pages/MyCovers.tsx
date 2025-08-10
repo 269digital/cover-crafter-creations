@@ -3,10 +3,11 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Download, Image, Eye, X, Moon, Sun } from "lucide-react";
+import { CreditCard, Download, Image, Eye, X, Moon, Sun, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useTheme } from "next-themes";
 
 interface Creation {
@@ -79,6 +80,20 @@ const MyCovers = () => {
     return creation.upscaled_image_url;
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('creations')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user?.id);
+      if (error) throw error;
+      setCreations((prev) => prev.filter((c) => c.id !== id));
+      toast({ title: 'Cover deleted', description: 'The cover has been removed.' });
+    } catch (e: any) {
+      toast({ title: 'Delete failed', description: e?.message || 'Unable to delete cover', variant: 'destructive' });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -212,6 +227,27 @@ const MyCovers = () => {
                          <Download className="h-4 w-4 mr-1" />
                          Download HD
                        </Button>
+                       <AlertDialog>
+                         <AlertDialogTrigger asChild>
+                           <Button size="sm" variant="destructive">
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </AlertDialogTrigger>
+                         <AlertDialogContent>
+                           <AlertDialogHeader>
+                             <AlertDialogTitle>Delete this cover?</AlertDialogTitle>
+                             <AlertDialogDescription>
+                               This action cannot be undone. This will permanently delete this cover.
+                             </AlertDialogDescription>
+                           </AlertDialogHeader>
+                           <AlertDialogFooter>
+                             <AlertDialogCancel>Cancel</AlertDialogCancel>
+                             <AlertDialogAction onClick={() => handleDelete(creation.id)}>
+                               Delete
+                             </AlertDialogAction>
+                           </AlertDialogFooter>
+                         </AlertDialogContent>
+                       </AlertDialog>
                      </div>
                      <div className="absolute top-2 right-2">
                        <Badge variant="secondary" className="text-xs bg-green-600 text-white">
