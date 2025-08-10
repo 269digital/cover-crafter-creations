@@ -211,10 +211,15 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     ctx.moveTo(fromX, fromY);
     ctx.lineTo(toX, toY);
     ctx.stroke();
+    if (mode === 'remove') {
+      hasPaintedRef.current = true;
+    }
   };
 
   // Track last point to draw continuous lines
   const lastPoint = useRef<{x: number, y: number} | null>(null);
+  // Track whether user actually painted any removal (black)
+  const hasPaintedRef = useRef(false);
 
   const toImageCoords = (clientX: number, clientY: number) => {
     const rect = previewCanvasRef.current!.getBoundingClientRect();
@@ -255,6 +260,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     const ctx = mask.getContext('2d')!;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, mask.width, mask.height);
+    hasPaintedRef.current = false;
     drawPreview();
   };
 
@@ -299,15 +305,33 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       setSubmitting(true);
 
       if (!imgEl) throw new Error('Image not ready');
+      if (!hasPaintedRef.current) {
+        toast.info('Upscaling...', { duration: 1200 });
+        const srcUrl = originalUrl || imageUrl;
+        const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
+          body: { imageUrl: srcUrl, coverId }
+        });
+
+        if (upError || !upData?.success) {
+          console.error('Upscale error:', upError || upData);
+          throw new Error((upError as any)?.message || upData?.error || 'Upscale failed');
+        }
+
+        await refreshCredits();
+        toast.success('Fixed and upscaled! Redirecting to My Covers...');
+        navigate('/my-covers');
+        return;
+      }
 
       // Normalize mask values and check if the user painted anything
       const isUntouched = binarizeAndCheckUntouched();
 
-      // If no changes were painted, skip edit and just upscale the original image
+      // If mask ended up with no black after normalization, skip edit and just upscale
       if (isUntouched) {
         toast.info('Upscaling...', { duration: 1200 });
+        const srcUrl = originalUrl || imageUrl;
         const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
-          body: { imageUrl: originalUrl, coverId }
+          body: { imageUrl: srcUrl, coverId }
         });
 
         if (upError || !upData?.success) {
