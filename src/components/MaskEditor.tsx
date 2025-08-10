@@ -14,16 +14,21 @@ interface MaskEditorProps {
   coverType?: string; // 'eBook Cover' | 'Album Cover' | 'Audiobook Cover'
 }
 
-// Helper to load an image and get natural dimensions
+// Helper to load an image and ensure it's decoded before use
 const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
   const img = new Image();
   img.crossOrigin = "anonymous";
-  img.onload = () => resolve(img);
+  img.onload = async () => {
+    try { await (img as any).decode?.(); } catch {}
+    resolve(img);
+  };
   img.onerror = reject;
   img.src = src;
 });
 
 const DEFAULT_PROMPT = "Remove any stray/extra text and fill the background naturally.";
+
+const PREVIEW_SIZE = { w: 892, h: 1248 };
 
 type Mode = "remove" | "restore";
 
@@ -31,8 +36,9 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const containerRef = useRef<HTMLDivElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
+  const imgPerCssRef = useRef<{ sx: number; sy: number }>({ sx: 1, sy: 1 });
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
-  const [scale, setScale] = useState(1); // draw scale from image -> preview
+  const [scale, setScale] = useState(1); // CSS px per image px
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushSize, setBrushSize] = useState(30);
@@ -41,18 +47,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const { refreshCredits } = useAuth();
 
   // Keep the preview at the same CSS size as Studio when available
-  const [fixedSize, setFixedSize] = useState<{ w: number; h: number } | null>(null);
-  useEffect(() => {
-    try {
-      const hint = sessionStorage.getItem('editViewportHint');
-      if (hint) {
-        const { width, height } = JSON.parse(hint);
-        if (typeof width === 'number' && typeof height === 'number') {
-          setFixedSize({ w: Math.round(width), h: Math.round(height) });
-        }
-      }
-    } catch {}
-  }, []);
+  const [fixedSize, setFixedSize] = useState<{ w: number; h: number }>({ w: PREVIEW_SIZE.w, h: PREVIEW_SIZE.h });
 
   // Load the image once
   useEffect(() => {
@@ -86,25 +81,6 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     return () => { mounted = false; window.removeEventListener('resize', onResize); };
   }, [imageUrl]);
 
-  // Fallback: if no Studio hint, approximate Studio tile size
-  useEffect(() => {
-    if (fixedSize) return;
-    const compute = () => {
-      const isSm = window.matchMedia('(min-width: 640px)').matches;
-      const containerMax = 672; // Tailwind max-w-2xl
-      const padding = 32; // container horizontal padding estimate
-      const gap = 16; // gap-4
-      const columns = isSm ? 2 : 1;
-      const base = Math.min(window.innerWidth - padding, containerMax);
-      const tile = Math.max(240, Math.min(384, Math.round(base / columns - (columns > 1 ? gap : 0))));
-      const h = Math.round(tile * (coverType === 'eBook Cover' ? 3 / 2 : 1));
-      setFixedSize({ w: tile, h });
-    };
-    compute();
-    const ro = new ResizeObserver(compute);
-    ro.observe(document.body);
-    return () => ro.disconnect();
-  }, [coverType, fixedSize]);
 
   // Ensure initial draw when image and layout are ready
   useEffect(() => {
@@ -126,33 +102,12 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     return () => ro.disconnect();
   }, [imgEl, fixedSize, coverType]);
 
-  // Ensure initial draw when image and layout are ready
-  useEffect(() => {
-    if (!imgEl) return;
-    requestAnimationFrame(() => {
-      resizePreview();
-      drawPreview();
-    });
-  }, [imgEl, fixedSize, coverType]);
-
-  // Observe container size changes to keep canvas in sync
-  useEffect(() => {
-    if (!imgEl || !containerRef.current) return;
-    const ro = new ResizeObserver(() => {
-      resizePreview();
-      drawPreview();
-    });
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, [imgEl, fixedSize, coverType]);
 
   const resizePreview = () => {
-    if (!imgEl || !containerRef.current || !previewCanvasRef.current) return;
+    if (!imgEl || !previewCanvasRef.current) return;
 
-    // Measure the aspect box (CSS enforces exact 2:3 or 1:1)
-    const rect = containerRef.current.getBoundingClientRect();
-    const cssW = Math.max(1, Math.round(rect.width));
-    const cssH = Math.max(1, Math.round(rect.height));
+    const cssW = PREVIEW_SIZE.w;
+    const cssH = PREVIEW_SIZE.h;
 
     // Handle DPR for crisp drawing
     const dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -162,17 +117,18 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     canvas.width = Math.floor(cssW * dpr);
     canvas.height = Math.floor(cssH * dpr);
 
-    // Compute image draw scale and offsets inside the aspect box (match Studio display)
+    // Compute image draw scale and offsets (contain, avoid upscaling)
     const fitW = cssW / imgEl.naturalWidth;
     const fitH = cssH / imgEl.naturalHeight;
-    const useCover = coverType === 'eBook Cover';
-    const scaleToFit = useCover ? Math.max(fitW, fitH) : Math.min(fitW, fitH);
+    const scaleToFit = Math.min(fitW, fitH, 1);
     const drawW = imgEl.naturalWidth * scaleToFit;
     const drawH = imgEl.naturalHeight * scaleToFit;
     const offX = (cssW - drawW) / 2;
     const offY = (cssH - drawH) / 2;
 
+    // Store CSS px per image px and its inverse
     setScale(scaleToFit);
+    imgPerCssRef.current = { sx: scaleToFit ? 1 / scaleToFit : 1, sy: scaleToFit ? 1 / scaleToFit : 1 };
     setOffset({ x: offX, y: offY });
   };
 
@@ -185,12 +141,12 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     const dpr = Math.max(1, window.devicePixelRatio || 1);
     pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Clear full CSS-sized area
-    const cssW = canvas.width / dpr;
-    const cssH = canvas.height / dpr;
+    // Clear full CSS-sized area using client dimensions (CSS px)
+    const cssW = canvas.clientWidth;
+    const cssH = canvas.clientHeight;
     pctx.clearRect(0, 0, cssW, cssH);
 
-    // Compute drawn image rect
+    // Compute drawn image rect (CSS px)
     const drawW = imgEl.naturalWidth * scale;
     const drawH = imgEl.naturalHeight * scale;
 
@@ -198,13 +154,22 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     pctx.drawImage(imgEl, offset.x, offset.y, drawW, drawH);
 
     // Prepare mask overlay at same rect
-    const w = cssW; const h = cssH;
     const off = document.createElement('canvas');
-    off.width = Math.ceil(w);
-    off.height = Math.ceil(h);
+    off.width = Math.ceil(cssW);
+    off.height = Math.ceil(cssH);
     const octx = off.getContext('2d')!;
     // Draw the full-res mask scaled into the same rect
-    octx.drawImage(maskCanvasRef.current, 0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height, offset.x, offset.y, drawW, drawH);
+    octx.drawImage(
+      maskCanvasRef.current,
+      0,
+      0,
+      maskCanvasRef.current.width,
+      maskCanvasRef.current.height,
+      offset.x,
+      offset.y,
+      drawW,
+      drawH
+    );
 
     const imgData = octx.getImageData(0, 0, off.width, off.height);
     const data = imgData.data;
@@ -227,8 +192,9 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const drawOnMask = (fromX: number, fromY: number, toX: number, toY: number) => {
     if (!maskCanvasRef.current) return;
     const ctx = maskCanvasRef.current.getContext('2d')!;
+    const scaleFactor = Math.max(imgPerCssRef.current.sx, imgPerCssRef.current.sy);
     ctx.strokeStyle = mode === 'remove' ? '#000000' : '#ffffff';
-    ctx.lineWidth = brushSize;
+    ctx.lineWidth = brushSize * scaleFactor;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
@@ -333,8 +299,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
           <div className="rounded-lg border bg-card p-3">
             <div
               ref={containerRef}
-              className={`relative ${fixedSize ? '' : ('w-full ' + (coverType === 'eBook Cover' ? 'aspect-[2/3]' : 'aspect-square'))}`}
-              style={fixedSize ? { width: fixedSize.w, height: fixedSize.h } : undefined}
+              className="relative"
+              style={{ width: fixedSize.w, height: fixedSize.h }}
             >
               <canvas
                 ref={previewCanvasRef}
@@ -342,7 +308,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
                 onPointerMove={onPointerMove}
                 onPointerUp={endDraw}
                 onPointerLeave={endDraw}
-                className="absolute inset-0 w-full h-full touch-none rounded-md border bg-muted"
+                className="touch-none rounded-md border bg-muted block"
               />
               {/* Upscaled badge overlay placeholder (shown by Studio-like behavior if needed) */}
             </div>
