@@ -55,8 +55,8 @@ serve(async (req) => {
     const user = userData.user
     console.log('Authenticated user:', user.id)
 
-    const { imageUrl, prompt, aspectRatio } = await req.json()
-    console.log('Received upscale request with imageUrl:', imageUrl)
+    const { imageUrl, prompt, aspectRatio, coverId } = await req.json()
+    console.log('Received upscale request with imageUrl:', imageUrl, 'coverId:', coverId)
 
     if (!imageUrl) {
       console.error('No image URL provided')
@@ -222,33 +222,46 @@ serve(async (req) => {
         const storedImageUrl = publicUrlData.publicUrl
         console.log('Stored image URL:', storedImageUrl)
 
-        // Find the creation record to update (match by original image URL)
-        const { data: creations, error: findError } = await supabaseClient
-          .from('creations')
-          .select('id')
-          .eq('user_id', user.id)
-          .or(`image_url1.eq."${imageUrl}",image_url2.eq."${imageUrl}",image_url3.eq."${imageUrl}",image_url4.eq."${imageUrl}"`)
-          .order('created_at', { ascending: false })
-          .maybeSingle()
-
-        if (findError) {
-          console.error('Error finding creation to update:', findError)
-        }
-
-        if (creations) {
-          // Update the creation record with the stored image URL
-          const { error: updateError } = await supabaseClient
+        // If coverId is provided, update that creation directly; otherwise, best-effort match by original URLs
+        if (coverId) {
+          const { error: updateByIdError } = await supabaseClient
             .from('creations')
             .update({ upscaled_image_url: storedImageUrl })
-            .eq('id', creations.id)
-
-          if (updateError) {
-            console.error('Error updating creation with stored image URL:', updateError)
+            .eq('id', coverId)
+            .eq('user_id', user.id)
+          if (updateByIdError) {
+            console.error('Error updating creation by id with stored image URL:', updateByIdError)
           } else {
-            console.log('Successfully updated creation with stored image URL')
+            console.log('Successfully updated creation by id with stored image URL')
           }
         } else {
-          console.error('Could not find creation record to update for image URL:', imageUrl)
+          // Fallback lookup by original image URLs
+          const { data: creations, error: findError } = await supabaseClient
+            .from('creations')
+            .select('id')
+            .eq('user_id', user.id)
+            .or(`image_url1.eq."${imageUrl}",image_url2.eq."${imageUrl}",image_url3.eq."${imageUrl}",image_url4.eq."${imageUrl}"`)
+            .order('created_at', { ascending: false })
+            .maybeSingle()
+
+          if (findError) {
+            console.error('Error finding creation to update:', findError)
+          }
+
+          if (creations) {
+            const { error: updateError } = await supabaseClient
+              .from('creations')
+              .update({ upscaled_image_url: storedImageUrl })
+              .eq('id', creations.id)
+
+            if (updateError) {
+              console.error('Error updating creation with stored image URL:', updateError)
+            } else {
+              console.log('Successfully updated creation with stored image URL')
+            }
+          } else {
+            console.error('Could not find creation record to update for image URL:', imageUrl)
+          }
         }
 
       } catch (error) {

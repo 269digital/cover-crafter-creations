@@ -4,6 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { MaskEditor } from "@/components/MaskEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/auth";
+import { useTheme } from "next-themes";
+import { Palette, CreditCard, Sun, Moon } from "lucide-react";
 
 interface Creation {
   id: string;

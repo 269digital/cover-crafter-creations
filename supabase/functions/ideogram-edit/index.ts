@@ -44,26 +44,8 @@ serve(async (req) => {
 
     const user = userData.user
 
-    // Check user credits (1 credit per edit)
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('credits')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    // Edit is free: no credit checks for applying the mask edit
 
-    if (profileError || !profile) {
-      return new Response(
-        JSON.stringify({ error: 'Unable to verify credits' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if ((profile.credits ?? 0) < 1) {
-      return new Response(
-        JSON.stringify({ error: 'Insufficient credits. You need 1 credit to apply an edit.' }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     // Expect multipart form-data with: mask (file), prompt (text), cover_id (text), and either image (file) or image_url (text)
     const form = await req.formData()
@@ -107,7 +89,8 @@ serve(async (req) => {
     const ideogramForm = new FormData()
     ideogramForm.append('image', imageFile, imageFile.name || 'image.jpg')
     ideogramForm.append('mask', maskFile, maskFile.name || 'mask.png')
-    ideogramForm.append('prompt', prompt || 'Remove unwanted text and fill background naturally')
+    const editPrompt = 'Remove all content painted on the mask and seamlessly fill the removed areas with natural background. Preserve surrounding details, lighting, and textures.'
+    ideogramForm.append('prompt', editPrompt)
     // Optionally: ideogramForm.append('magic_prompt', 'AUTO')
 
     const ideogramResp = await fetch('https://api.ideogram.ai/v1/ideogram-v3/edit', {
@@ -176,23 +159,9 @@ serve(async (req) => {
       }
     }
 
-    // Deduct 1 credit for successful edit
-    const newCredits = (profile.credits ?? 0) - 1
-    const { error: creditError } = await supabase
-      .from('profiles')
-      .update({ credits: newCredits })
-      .eq('user_id', user.id)
-
-    if (creditError) {
-      console.error('Failed to deduct credits after edit:', creditError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to process credits after edit' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
+    // No credit deduction here; credits are deducted during upscaling only
     return new Response(
-      JSON.stringify({ success: true, editedImage: editedUrl, storedImageUrl: storedUrl, creditsRemaining: newCredits }),
+      JSON.stringify({ success: true, editedImage: editedUrl, storedImageUrl: storedUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (e: any) {

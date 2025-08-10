@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useNavigate } from "react-router-dom";
 
 interface MaskEditorProps {
   imageUrl: string; // display URL (may be proxied)
@@ -26,7 +26,7 @@ const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, rejec
   img.src = src;
 });
 
-const DEFAULT_PROMPT = "Remove any stray/extra text and fill the background naturally.";
+
 
 const PREVIEW_SIZE = { w: 892, h: 1248 };
 
@@ -43,8 +43,9 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushSize, setBrushSize] = useState(30);
   const [mode, setMode] = useState<Mode>("remove");
-  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
+  const [submitting, setSubmitting] = useState(false);
   const { refreshCredits } = useAuth();
+  const navigate = useNavigate();
 
   // Keep the preview at the same CSS size as Studio when available
   const [fixedSize, setFixedSize] = useState<{ w: number; h: number }>({ w: PREVIEW_SIZE.w, h: PREVIEW_SIZE.h });
@@ -250,7 +251,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
   const handleGenerateFix = async () => {
     try {
-      toast.info('Submitting edit...', { duration: 1200 });
+      setSubmitting(true);
+      toast.info('Applying edit...', { duration: 1200 });
 
       // Export mask as PNG (full resolution)
       const maskBlob = await new Promise<Blob | null>((resolve) =>
@@ -258,19 +260,17 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       );
       if (!maskBlob) throw new Error('Failed to export mask');
 
-      // Build multipart form for edge function
+      // Build multipart form for edge function (prompt handled server-side)
       const form = new FormData();
       form.append('image_url', originalUrl);
       form.append('mask', maskBlob, 'mask.png');
-      const promptToSend = (prompt || '').trim() || DEFAULT_PROMPT;
-      form.append('prompt', promptToSend);
       form.append('cover_id', coverId);
 
       const { data: session } = await supabase.auth.getSession();
       const accessToken = session.session?.access_token;
       if (!accessToken) throw new Error('Not authenticated');
 
-      const resp = await fetch(
+      const editResp = await fetch(
         `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/ideogram-edit`,
         {
           method: 'POST',
@@ -279,17 +279,35 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         }
       );
 
-      const json = await resp.json();
-      if (!resp.ok || !json?.success) {
-        console.error('Edit error:', json);
-        throw new Error(json?.error || 'Edit failed');
+      const editJson = await editResp.json();
+      if (!editResp.ok || !editJson?.success) {
+        console.error('Edit error:', editJson);
+        throw new Error(editJson?.error || 'Edit failed');
       }
 
-      toast.success('Edit applied and saved! You can now upscale or view it in My Covers.');
+      const editedUrl: string = editJson.storedImageUrl || editJson.editedImage;
+      if (!editedUrl) throw new Error('Missing edited image URL');
+
+      toast.info('Upscaling...', { duration: 1200 });
+
+      // Invoke upscaler (deducts 2 credits) and update creation via coverId
+      const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
+        body: { imageUrl: editedUrl, coverId }
+      });
+
+      if (upError || !upData?.success) {
+        console.error('Upscale error:', upError || upData);
+        throw new Error((upError as any)?.message || upData?.error || 'Upscale failed');
+      }
+
       await refreshCredits();
+      toast.success('Fixed and upscaled! Redirecting to My Covers...');
+      navigate('/my-covers');
 
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to generate fix');
+      toast.error(e?.message || 'Failed to process edit');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -334,14 +352,13 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
             Clear Mask
           </Button>
 
-          <div className="space-y-2">
-            <Label>Prompt</Label>
-            <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-            <p className="text-xs text-muted-foreground">Anything you paint will be removed and replaced by AI.</p>
-          </div>
+          <p className="text-xs text-muted-foreground">Anything you paint will be removed and replaced by AI.</p>
 
-          <Button onClick={handleGenerateFix} className="w-full">Generate Fix (-1 credit)</Button>
+          <Button onClick={handleGenerateFix} className="w-full" disabled={submitting}>
+            {submitting ? 'Processing...' : 'Generate Fix & Upscale'}
+          </Button>
           {/* Upscale and Download buttons will be available from the Studio-like flow after upscaling */}
+
         </div>
       </div>
 
