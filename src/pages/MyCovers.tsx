@@ -137,7 +137,7 @@ const MyCovers = () => {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
               <Image className="h-6 w-6 text-white" />
-              <h1 className="text-xl font-bold text-white">My Covers</h1>
+              <h1 className="text-xl font-bold text-white">Your HD Covers</h1>
               <Button
                 variant="ghost"
                 size="sm"
