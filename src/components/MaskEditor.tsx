@@ -27,7 +27,7 @@ const DEFAULT_PROMPT = "Remove any stray/extra text and fill the background natu
 
 type Mode = "remove" | "restore";
 
-export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, coverId }) => {
+export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, coverId, coverType = 'eBook Cover' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -38,6 +38,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const [brushSize, setBrushSize] = useState(30);
   const [mode, setMode] = useState<Mode>("remove");
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
+  const { refreshCredits } = useAuth();
 
   // Load the image once
   useEffect(() => {
@@ -247,9 +248,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       }
 
       toast.success('Edit applied and saved! You can now upscale or view it in My Covers.');
-      // Refresh credits in UI
-      try { const { refreshCredits } = useAuth(); await refreshCredits(); } catch {}
-      // Stay on page; show UI
+      await refreshCredits();
 
     } catch (e: any) {
       toast.error(e?.message || 'Failed to generate fix');
