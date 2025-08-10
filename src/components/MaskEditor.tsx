@@ -449,9 +449,6 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
             <Button variant={mode === 'remove' ? 'default' : 'outline'} onClick={() => setMode('remove')}>
               Remove (paint)
             </Button>
-            <Button variant={mode === 'restore' ? 'default' : 'outline'} onClick={() => setMode('restore')}>
-              Restore
-            </Button>
           </div>
 
           <Button variant="secondary" onClick={clearMask} className="w-full">
@@ -467,7 +464,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
                 Processing... (May take up to 30 seconds...)
               </>
             ) : (
-              'Generate Fix & Upscale (-2 credits)'
+              'Generate Fix & Upscale'
             )}
           </Button>
           {/* Upscale and Download buttons will be available from the Studio-like flow after upscaling */}
