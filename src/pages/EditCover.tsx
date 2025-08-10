@@ -191,14 +191,7 @@ const EditCover: React.FC = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-4">
-        {/* Helper text: mobile and desktop variants */}
-        <p className="text-muted-foreground md:hidden">
-          Use your finger to paint out the areas you want to remove. To start over, click Clear Mask.
-        </p>
-        <p className="text-muted-foreground hidden md:block">
-          Use your cursor to paint out the area you want to remove. To start over, click Clear Mask.
-        </p>
+      <main className="w-full p-0">
         {imageUrl && originalUrl && coverId && (
           <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} coverType={coverType} />
         )}

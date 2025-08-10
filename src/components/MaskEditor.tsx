@@ -437,7 +437,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="rounded-lg border bg-card p-3">
+          <div>
             <div
               ref={containerRef}
               className="relative w-full"
@@ -449,7 +449,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
                 onPointerMove={onPointerMove}
                 onPointerUp={endDraw}
                 onPointerLeave={endDraw}
-                className="touch-none rounded-md border bg-muted block"
+                className="touch-none block"
               />
               {/* Upscaled badge overlay placeholder (shown by Studio-like behavior if needed) */}
             </div>
