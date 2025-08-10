@@ -107,14 +107,8 @@ serve(async (req) => {
     const ideogramForm = new FormData()
     ideogramForm.append('image', imageFile, imageFile.name || 'image.jpg')
     ideogramForm.append('mask', maskFile, maskFile.name || 'mask.png')
-
-    const imageRequest = {
-      prompt: prompt || 'Remove unwanted text and fill background naturally',
-      magic_prompt_option: 'AUTO',
-      // Some APIs require explicit mode or strength; include generic fields for compatibility
-      // mode: 'EDIT',
-    }
-    ideogramForm.append('image_request', JSON.stringify(imageRequest))
+    ideogramForm.append('prompt', prompt || 'Remove unwanted text and fill background naturally')
+    // Optionally: ideogramForm.append('magic_prompt', 'AUTO')
 
     const ideogramResp = await fetch('https://api.ideogram.ai/v1/ideogram-v3/edit', {
       method: 'POST',
