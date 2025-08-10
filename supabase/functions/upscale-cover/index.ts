@@ -147,7 +147,7 @@ serve(async (req) => {
     }
     formData.append('image_request', JSON.stringify(imageRequest))
 
-    const upscaleResponse = await fetch('https://api.ideogram.ai/upscale', {
+    const upscaleResponse = await fetch('https://api.ideogram.ai/v1/upscale', {
       method: 'POST',
       headers: {
         'Api-Key': ideogramApiKey,
