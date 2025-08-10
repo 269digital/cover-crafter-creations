@@ -268,9 +268,21 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       );
       if (!maskBlob) throw new Error('Failed to export mask');
 
+      // Export the exact source image at the SAME pixel dimensions as the mask
+      if (!imgEl) throw new Error('Image not ready');
+      const srcCanvas = document.createElement('canvas');
+      srcCanvas.width = maskCanvasRef.current!.width;
+      srcCanvas.height = maskCanvasRef.current!.height;
+      const sctx = srcCanvas.getContext('2d')!;
+      sctx.drawImage(imgEl, 0, 0, srcCanvas.width, srcCanvas.height);
+      const imageBlob = await new Promise<Blob | null>((resolve) =>
+        srcCanvas.toBlob((b) => resolve(b), 'image/png')
+      );
+      if (!imageBlob) throw new Error('Failed to export source image');
+
       // Build multipart form for edge function (prompt handled server-side)
       const form = new FormData();
-      form.append('image_url', originalUrl);
+      form.append('image', imageBlob, 'image.png');
       form.append('mask', maskBlob, 'mask.png');
       form.append('cover_id', coverId);
 
