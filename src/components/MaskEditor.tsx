@@ -319,7 +319,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
         await refreshCredits();
         toast.success('Fixed and upscaled! Redirecting to My Covers...');
-        navigate('/my-covers');
+        navigate(`/my-covers?waitFor=${coverId}`);
         return;
       }
 
@@ -341,7 +341,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
         await refreshCredits();
         toast.success('Fixed and upscaled! Redirecting to My Covers...');
-        navigate('/my-covers');
+        navigate(`/my-covers?waitFor=${coverId}`);
         return;
       }
 
@@ -408,7 +408,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
       await refreshCredits();
       toast.success('Fixed and upscaled! Redirecting to My Covers...');
-      navigate('/my-covers');
+      navigate(`/my-covers?waitFor=${coverId}`);
 
     } catch (e: any) {
       toast.error(e?.message || 'Failed to process edit');

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Download, Image, Eye, X, Moon, Sun, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -28,6 +28,7 @@ const MyCovers = () => {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [creations, setCreations] = useState<Creation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -59,6 +60,39 @@ const MyCovers = () => {
       setLoading(false);
     }
   };
+
+  // If redirected here after upscaling, poll for the stored image to appear
+  useEffect(() => {
+    const targetId = searchParams.get('waitFor');
+    if (!user || !targetId) return;
+
+    let cancelled = false;
+    const start = Date.now();
+
+    const interval = setInterval(async () => {
+      if (cancelled) return;
+      try {
+        const { data, error } = await supabase
+          .from('creations')
+          .select('id, upscaled_image_url')
+          .eq('id', targetId)
+          .maybeSingle();
+        if (error) {
+          console.error('Polling error:', error);
+        }
+        if (data?.upscaled_image_url) {
+          clearInterval(interval);
+          await fetchCreations();
+        } else if (Date.now() - start > 30000) {
+          clearInterval(interval);
+        }
+      } catch (e) {
+        console.error('Polling exception:', e);
+      }
+    }, 1500);
+
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [user, searchParams]);
 
   const handleSignOut = async () => {
     await signOut();
