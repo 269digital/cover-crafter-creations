@@ -105,8 +105,8 @@ serve(async (req) => {
 
     // Build Ideogram edit request (multipart)
     const ideogramForm = new FormData()
-    ideogramForm.append('image_file', imageFile, imageFile.name || 'image.jpg')
-    ideogramForm.append('mask_file', maskFile, maskFile.name || 'mask.png')
+    ideogramForm.append('image', imageFile, imageFile.name || 'image.jpg')
+    ideogramForm.append('mask', maskFile, maskFile.name || 'mask.png')
 
     const imageRequest = {
       prompt: prompt || 'Remove unwanted text and fill background naturally',
@@ -182,8 +182,23 @@ serve(async (req) => {
       }
     }
 
+    // Deduct 1 credit for successful edit
+    const newCredits = (profile.credits ?? 0) - 1
+    const { error: creditError } = await supabase
+      .from('profiles')
+      .update({ credits: newCredits })
+      .eq('user_id', user.id)
+
+    if (creditError) {
+      console.error('Failed to deduct credits after edit:', creditError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to process credits after edit' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     return new Response(
-      JSON.stringify({ success: true, editedImage: editedUrl, storedImageUrl: storedUrl }),
+      JSON.stringify({ success: true, editedImage: editedUrl, storedImageUrl: storedUrl, creditsRemaining: newCredits }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (e: any) {

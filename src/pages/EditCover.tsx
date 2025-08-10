@@ -23,6 +23,7 @@ const EditCover: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null); // display URL (may be proxied blob)
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
+  const [coverType, setCoverType] = useState<string>('eBook Cover');
 
   useEffect(() => {
     document.title = `Edit Cover | Covers by AI`;
@@ -56,6 +57,7 @@ const EditCover: React.FC = () => {
           return;
         }
         setOriginalUrl(url);
+        setCoverType(data.cover_type || 'eBook Cover');
 
         const host = new URL(url).hostname;
         const isIdeogram = host === 'ideogram.ai' || host.endsWith('.ideogram.ai');
@@ -118,7 +120,7 @@ const EditCover: React.FC = () => {
         <h1 className="text-2xl font-bold">Edit Cover</h1>
         <p className="text-muted-foreground">Anything you paint over will be removed and replaced by AI.</p>
         {imageUrl && originalUrl && coverId && (
-          <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} />
+          <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} coverType={coverType} />
         )}
       </main>
     </div>

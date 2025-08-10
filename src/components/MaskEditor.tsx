@@ -11,6 +11,7 @@ interface MaskEditorProps {
   imageUrl: string; // display URL (may be proxied)
   originalUrl: string; // original source URL for server-side fetch
   coverId: string;
+  coverType?: string; // 'eBook Cover' | 'Album Cover' | 'Audiobook Cover'
 }
 
 // Helper to load an image and get natural dimensions
@@ -31,7 +32,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(1); // draw scale from image -> preview
+  const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushSize, setBrushSize] = useState(30);
   const [mode, setMode] = useState<Mode>("remove");
@@ -70,58 +72,79 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const resizePreview = () => {
     if (!imgEl || !containerRef.current || !previewCanvasRef.current) return;
     const containerWidth = containerRef.current.clientWidth;
-    const maxHeight = 520; // constrain a bit for viewport
+    const maxHeight = 640; // a bit taller for editing
 
-    const imgW = imgEl.naturalWidth;
-    const imgH = imgEl.naturalHeight;
+    // Desired viewport aspect from cover type
+    const aspect = (coverType && coverType !== 'eBook Cover') ? 1 : (2/3); // 2:3 for ebook, 1:1 otherwise
 
-    let targetW = containerWidth;
-    let targetH = Math.round((imgH / imgW) * targetW);
-
-    if (targetH > maxHeight) {
-      targetH = maxHeight;
-      targetW = Math.round((imgW / imgH) * targetH);
+    // Compute CSS size for the preview canvas based on aspect
+    let cssW = containerWidth;
+    let cssH = Math.round(cssW * (1/aspect)); // aspect = width/height (2/3 => height = width * 3/2)
+    if (cssH > maxHeight) {
+      cssH = maxHeight;
+      cssW = Math.round(cssH * aspect);
     }
 
-    const scaleFactor = targetW / imgW;
-    setScale(scaleFactor);
+    // Handle DPR for crisp drawing
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const canvas = previewCanvasRef.current;
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    canvas.width = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
 
-    previewCanvasRef.current.width = targetW;
-    previewCanvasRef.current.height = targetH;
+    // Compute image draw scale (contain) and offsets inside the aspect box (in CSS pixels)
+    const scaleToFit = Math.min(cssW / imgEl.naturalWidth, cssH / imgEl.naturalHeight);
+    const drawW = imgEl.naturalWidth * scaleToFit;
+    const drawH = imgEl.naturalHeight * scaleToFit;
+    const offX = (cssW - drawW) / 2;
+    const offY = (cssH - drawH) / 2;
+
+    setScale(scaleToFit);
+    setOffset({ x: offX, y: offY });
   };
 
   const drawPreview = () => {
     if (!imgEl || !previewCanvasRef.current || !maskCanvasRef.current) return;
-    const pctx = previewCanvasRef.current.getContext('2d')!;
-    const mask = maskCanvasRef.current;
+    const canvas = previewCanvasRef.current;
+    const pctx = canvas.getContext('2d')!;
+
+    // Reset transform for DPR-aware drawing
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Clear full CSS-sized area
+    const cssW = canvas.width / dpr;
+    const cssH = canvas.height / dpr;
+    pctx.clearRect(0, 0, cssW, cssH);
+
+    // Compute drawn image rect
+    const drawW = imgEl.naturalWidth * scale;
+    const drawH = imgEl.naturalHeight * scale;
 
     // Draw base image
-    pctx.clearRect(0, 0, previewCanvasRef.current.width, previewCanvasRef.current.height);
-    pctx.drawImage(imgEl, 0, 0, previewCanvasRef.current.width, previewCanvasRef.current.height);
+    pctx.drawImage(imgEl, offset.x, offset.y, drawW, drawH);
 
-    // Build a tinted overlay only where mask is black
-    const w = previewCanvasRef.current.width;
-    const h = previewCanvasRef.current.height;
+    // Prepare mask overlay at same rect
+    const w = cssW; const h = cssH;
     const off = document.createElement('canvas');
-    off.width = w;
-    off.height = h;
+    off.width = Math.ceil(w);
+    off.height = Math.ceil(h);
     const octx = off.getContext('2d')!;
-    octx.drawImage(mask, 0, 0, w, h);
-    const imgData = octx.getImageData(0, 0, w, h);
+    // Draw the full-res mask scaled into the same rect
+    octx.drawImage(maskCanvasRef.current, 0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height, offset.x, offset.y, drawW, drawH);
+
+    const imgData = octx.getImageData(0, 0, off.width, off.height);
     const data = imgData.data;
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      // Treat dark (near-black) pixels as masked, white as keep
       const isBlack = r < 128 && g < 128 && b < 128;
       if (isBlack) {
-        data[i] = 255;      // R
-        data[i + 1] = 0;    // G
-        data[i + 2] = 0;    // B
-        data[i + 3] = 76;   // A ~0.3
+        data[i] = 255; data[i + 1] = 0; data[i + 2] = 0; data[i + 3] = 76;
       } else {
-        data[i + 3] = 0;    // transparent
+        data[i + 3] = 0;
       }
     }
     octx.putImageData(imgData, 0, 0);
@@ -147,8 +170,10 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
   const toImageCoords = (clientX: number, clientY: number) => {
     const rect = previewCanvasRef.current!.getBoundingClientRect();
-    const x = (clientX - rect.left) / scale;
-    const y = (clientY - rect.top) / scale;
+    const px = clientX - rect.left;
+    const py = clientY - rect.top;
+    const x = (px - offset.x) / scale;
+    const y = (py - offset.y) / scale;
     return { x, y };
   };
 
@@ -221,9 +246,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         throw new Error(json?.error || 'Edit failed');
       }
 
-      toast.success('Edit applied! Redirecting...');
-      // Redirect to My Covers to see updated image
-      window.location.assign('/my-covers');
+      toast.success('Edit applied and saved! You can now upscale or view it in My Covers.');
+      // Refresh credits in UI
+      try { const { refreshCredits } = useAuth(); await refreshCredits(); } catch {}
+      // Stay on page; show UI
+
     } catch (e: any) {
       toast.error(e?.message || 'Failed to generate fix');
     }
@@ -234,7 +261,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
           <div className="rounded-lg border bg-card p-3">
-            <div ref={containerRef} className="w-full">
+            <div ref={containerRef} className="w-full relative">
               <canvas
                 ref={previewCanvasRef}
                 onPointerDown={onPointerDown}
@@ -243,6 +270,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
                 onPointerLeave={endDraw}
                 className="w-full touch-none rounded-md border bg-muted"
               />
+              {/* Upscaled badge overlay placeholder (shown by Studio-like behavior if needed) */}
             </div>
           </div>
         </div>
@@ -271,7 +299,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
             <p className="text-xs text-muted-foreground">Anything you paint will be removed and replaced by AI.</p>
           </div>
 
-          <Button onClick={handleGenerateFix} className="w-full">Generate Fix</Button>
+          <Button onClick={handleGenerateFix} className="w-full">Generate Fix (-1 credit)</Button>
+          {/* Upscale and Download buttons will be available from the Studio-like flow after upscaling */}
         </div>
       </div>
 
