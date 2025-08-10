@@ -252,14 +252,17 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
           <div className="rounded-lg border bg-card p-3">
-            <div ref={containerRef} className="w-full relative">
+            <div
+              ref={containerRef}
+              className={`w-full relative ${coverType === 'eBook Cover' ? 'aspect-[2/3]' : 'aspect-square'}`}
+            >
               <canvas
                 ref={previewCanvasRef}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={endDraw}
                 onPointerLeave={endDraw}
-                className="w-full touch-none rounded-md border bg-muted"
+                className="absolute inset-0 w-full h-full touch-none rounded-md border bg-muted"
               />
               {/* Upscaled badge overlay placeholder (shown by Studio-like behavior if needed) */}
             </div>
