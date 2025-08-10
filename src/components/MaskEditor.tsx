@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 interface MaskEditorProps {
-  imageUrl: string;
+  imageUrl: string; // display URL (may be proxied)
+  originalUrl: string; // original source URL for server-side fetch
   coverId: string;
 }
 
@@ -24,7 +25,7 @@ const DEFAULT_PROMPT = "Remove any stray/extra text and fill the background natu
 
 type Mode = "remove" | "restore";
 
-export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, coverId }) => {
+export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, coverId }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -187,11 +188,6 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, coverId }) => 
     try {
       toast.info('Submitting edit...', { duration: 1200 });
 
-      // Fetch original image as Blob
-      const imgResp = await fetch(imageUrl, { cache: 'no-cache' });
-      if (!imgResp.ok) throw new Error('Failed to fetch original image');
-      const imgBlob = await imgResp.blob();
-
       // Export mask as PNG (full resolution)
       const maskBlob = await new Promise<Blob | null>((resolve) =>
         maskCanvasRef.current!.toBlob((b) => resolve(b), 'image/png')
@@ -200,7 +196,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, coverId }) => 
 
       // Build multipart form for edge function
       const form = new FormData();
-      form.append('image', imgBlob, 'image.png');
+      form.append('image_url', originalUrl);
       form.append('mask', maskBlob, 'mask.png');
       form.append('prompt', prompt);
       form.append('cover_id', coverId);

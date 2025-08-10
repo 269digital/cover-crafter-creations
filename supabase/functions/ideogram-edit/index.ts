@@ -44,16 +44,40 @@ serve(async (req) => {
 
     const user = userData.user
 
-    // Expect multipart form-data with: image (file), mask (file), prompt (text), cover_id (text)
+    // Expect multipart form-data with: mask (file), prompt (text), cover_id (text), and either image (file) or image_url (text)
     const form = await req.formData()
-    const imageFile = form.get('image') as File | null
+    let imageFile = form.get('image') as File | null
+    const imageUrlFromForm = (form.get('image_url') as string | null) ?? ''
     const maskFile = form.get('mask') as File | null
     const prompt = (form.get('prompt') as string | null) ?? ''
     const coverId = (form.get('cover_id') as string | null) ?? ''
 
-    if (!imageFile || !maskFile) {
+    if (!maskFile) {
       return new Response(
-        JSON.stringify({ error: 'Missing image or mask file' }),
+        JSON.stringify({ error: 'Missing mask file' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // If image file not provided, try fetching from image_url server-side
+    if (!imageFile && imageUrlFromForm) {
+      try {
+        const fetched = await fetch(imageUrlFromForm)
+        if (!fetched.ok) throw new Error(`Failed to fetch image: ${fetched.status}`)
+        const buf = await fetched.arrayBuffer()
+        const blob = new Blob([buf], { type: fetched.headers.get('content-type') || 'image/png' })
+        imageFile = new File([blob], 'image.png', { type: blob.type })
+      } catch (e) {
+        return new Response(
+          JSON.stringify({ error: 'Unable to retrieve source image from URL', details: (e as any)?.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    if (!imageFile) {
+      return new Response(
+        JSON.stringify({ error: 'Missing source image. Provide image file or image_url.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

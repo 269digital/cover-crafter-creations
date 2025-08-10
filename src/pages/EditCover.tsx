@@ -15,12 +15,14 @@ interface Creation {
   prompt: string;
 }
 
+
 const EditCover: React.FC = () => {
   const { coverId } = useParams<{ coverId: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null); // display URL (may be proxied blob)
+  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = `Edit Cover | Covers by AI`;
@@ -50,7 +52,23 @@ const EditCover: React.FC = () => {
           setLoading(false);
           return;
         }
-        setImageUrl(url);
+        setOriginalUrl(url);
+
+        // For ideogram ephemeral URLs, proxy through edge function to avoid CORS
+        if (/^https:\/\/ideogram\.ai\//.test(url)) {
+          const { data: session } = await supabase.auth.getSession();
+          const accessToken = session.session?.access_token;
+          const resp = await fetch(
+            `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(url)}`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          );
+          if (!resp.ok) throw new Error('Failed to proxy image');
+          const blob = await resp.blob();
+          const objUrl = URL.createObjectURL(blob);
+          setImageUrl(objUrl);
+        } else {
+          setImageUrl(url);
+        }
       } catch (e: any) {
         setError(e?.message || 'Failed to load cover');
       } finally {
@@ -89,8 +107,8 @@ const EditCover: React.FC = () => {
       <main className="container mx-auto px-4 py-6 space-y-4">
         <h1 className="text-2xl font-bold">Edit Cover</h1>
         <p className="text-muted-foreground">Anything you paint over will be removed and replaced by AI.</p>
-        {imageUrl && coverId && (
-          <MaskEditor imageUrl={imageUrl} coverId={coverId} />
+        {imageUrl && originalUrl && coverId && (
+          <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} />
         )}
       </main>
     </div>
