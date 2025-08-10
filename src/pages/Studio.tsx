@@ -561,7 +561,7 @@ const Studio = () => {
                 {generating ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating... (May take up to 30 seconds)
+                    Generating... (May take up to 30 seconds...)
                   </>
                 ) : (
                   <>
@@ -632,12 +632,12 @@ const Studio = () => {
                               {editingIndex === index ? (
                                 <>
                                   <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                  Editing... (May take up to 30 seconds)
+                                  Editing... (May take up to 30 seconds...)
                                 </>
                               ) : (
                                 <>
                                   <Wand2 className="h-3 w-3 mr-1" />
-                                  Edit
+                                  Edit (-2 credits)
                                 </>
                               )}
                             </Button>
@@ -687,12 +687,12 @@ const Studio = () => {
                               {editingIndex === index ? (
                                 <>
                                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Editing... (May take up to 30 seconds)
+                                  Editing... (May take up to 30 seconds...)
                                 </>
                               ) : (
                                 <>
                                   <Wand2 className="h-4 w-4 mr-2" />
-                                  Edit
+                                  Edit (-2 credits)
                                 </>
                               )}
                             </Button>
