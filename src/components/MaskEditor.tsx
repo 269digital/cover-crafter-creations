@@ -300,10 +300,12 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         }
       );
 
-      const editJson = await editResp.json();
+      const editJson = await editResp.json().catch(async () => ({ error: await editResp.text().catch(() => 'Edit failed') }));
       if (!editResp.ok || !editJson?.success) {
-        console.error('Edit error:', editJson);
-        throw new Error(editJson?.error || 'Edit failed');
+        const baseMsg = editJson?.error || 'Edit failed';
+        const det = editJson?.details ? `: ${typeof editJson.details === 'string' ? editJson.details : JSON.stringify(editJson.details)}` : '';
+        console.error('Edit error details:', editJson);
+        throw new Error(`${baseMsg}${det}`);
       }
 
       const editedUrl: string = editJson.storedImageUrl || editJson.editedImage;
