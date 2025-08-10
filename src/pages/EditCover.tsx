@@ -29,6 +29,9 @@ const EditCover: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+
     const load = async () => {
       try {
         if (!coverId) {
@@ -54,20 +57,21 @@ const EditCover: React.FC = () => {
         }
         setOriginalUrl(url);
 
-        try {
-          const host = new URL(url).hostname;
-          const isIdeogram = host === 'ideogram.ai' || host.endsWith('.ideogram.ai');
-          if (isIdeogram) {
-            const { data: session } = await supabase.auth.getSession();
-            const accessToken = session.session?.access_token;
-            if (!accessToken) throw new Error('Not authenticated');
-            // Use the proxy URL directly so the browser loads from our domain
-            const proxied = `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(url)}`;
-            setImageUrl(proxied);
-          } else {
-            setImageUrl(url);
-          }
-        } catch {
+        const host = new URL(url).hostname;
+        const isIdeogram = host === 'ideogram.ai' || host.endsWith('.ideogram.ai');
+        if (isIdeogram) {
+          const { data: session } = await supabase.auth.getSession();
+          const accessToken = session.session?.access_token;
+          if (!accessToken) throw new Error('Not authenticated');
+          const proxied = `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(url)}`;
+          const resp = await fetch(proxied, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (!resp.ok) throw new Error('Failed to load image');
+          const blob = await resp.blob();
+          objectUrl = URL.createObjectURL(blob);
+          if (!cancelled) setImageUrl(objectUrl);
+        } else {
           setImageUrl(url);
         }
       } catch (e: any) {
@@ -77,6 +81,11 @@ const EditCover: React.FC = () => {
       }
     };
     load();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [coverId]);
 
   if (loading) {

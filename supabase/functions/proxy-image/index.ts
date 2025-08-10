@@ -11,6 +11,14 @@ serve(async (req) => {
   }
 
   try {
+    // Require auth to avoid open proxy abuse
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const url = new URL(req.url);
     const target = url.searchParams.get('url');
