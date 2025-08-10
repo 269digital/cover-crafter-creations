@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 interface MaskEditorProps {
   imageUrl: string; // display URL (may be proxied)
@@ -276,13 +277,13 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       const sctx = srcCanvas.getContext('2d')!;
       sctx.drawImage(imgEl, 0, 0, srcCanvas.width, srcCanvas.height);
       const imageBlob = await new Promise<Blob | null>((resolve) =>
-        srcCanvas.toBlob((b) => resolve(b), 'image/png')
+        srcCanvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92)
       );
       if (!imageBlob) throw new Error('Failed to export source image');
 
       // Build multipart form for edge function (prompt handled server-side)
       const form = new FormData();
-      form.append('image', imageBlob, 'image.png');
+      form.append('image', imageBlob, 'image.jpg');
       form.append('mask', maskBlob, 'mask.png');
       form.append('cover_id', coverId);
 
@@ -375,7 +376,14 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
           <p className="text-xs text-muted-foreground">Anything you paint will be removed and replaced by AI.</p>
 
           <Button onClick={handleGenerateFix} className="w-full" disabled={submitting}>
-            {submitting ? 'Processing...' : 'Generate Fix & Upscale (-2 credits)'}
+            {submitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing... (May take up to 30 seconds...)
+              </>
+            ) : (
+              'Generate Fix & Upscale (-2 credits)'
+            )}
           </Button>
           {/* Upscale and Download buttons will be available from the Studio-like flow after upscaling */}
 
