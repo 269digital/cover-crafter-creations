@@ -445,17 +445,12 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
             <Slider value={[brushSize]} min={5} max={150} step={1} onValueChange={(v) => setBrushSize(v[0])} />
           </div>
 
-          <div className="flex gap-2">
-            <Button variant={mode === 'remove' ? 'default' : 'outline'} onClick={() => setMode('remove')}>
-              Remove (paint)
-            </Button>
-          </div>
 
           <Button variant="secondary" onClick={clearMask} className="w-full">
             Clear Mask
           </Button>
 
-          <p className="text-xs text-muted-foreground">Anything you paint will be removed and replaced by AI.</p>
+          
 
           <Button onClick={handleGenerateFix} className="w-full" disabled={submitting}>
             {submitting ? (

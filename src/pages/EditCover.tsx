@@ -191,7 +191,7 @@ const EditCover: React.FC = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-4">
-        <p className="text-muted-foreground">Anything you paint over will be removed and replaced by AI.</p>
+        <p className="text-muted-foreground">Anything you paint over will be removed.</p>
         {imageUrl && originalUrl && coverId && (
           <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} coverType={coverType} />
         )}
