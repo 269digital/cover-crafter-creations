@@ -411,7 +411,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         ? (originalUrl || imageUrl)
         : (displayedUrl || originalUrl || imageUrl);
       const { data: upData, error: upError } = await supabase.functions.invoke('upscale-cover', {
-        body: { imageUrl: srcUrl, coverId }
+        body: { imageUrl: srcUrl, coverId, scale: 2 }
       });
 
       if (upError || !upData?.success) {
@@ -456,7 +456,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
               Upscaling...
             </>
           ) : (
-            'Upscale'
+            'Upscale (-2 credits)'
           )}
         </Button>
         <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
@@ -517,7 +517,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
                 Upscaling...
               </>
             ) : (
-              'Upscale'
+              'Upscale (-2 credits)'
             )}
           </Button>
           <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">

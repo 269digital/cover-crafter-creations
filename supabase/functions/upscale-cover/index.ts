@@ -55,8 +55,8 @@ serve(async (req) => {
     const user = userData.user
     console.log('Authenticated user:', user.id)
 
-    const { imageUrl, prompt, aspectRatio, coverId } = await req.json()
-    console.log('Received upscale request with imageUrl:', imageUrl, 'coverId:', coverId)
+    const { imageUrl, prompt, aspectRatio, coverId, scale } = await req.json()
+    console.log('Received upscale request with imageUrl:', imageUrl, 'coverId:', coverId, 'scale:', scale)
 
     if (!imageUrl) {
       console.error('No image URL provided')
@@ -141,7 +141,9 @@ serve(async (req) => {
     // Add the image request parameters
     const imageRequest = {
       prompt: "Upscale only. Preserve the subject's identity and facial features. Do not alter content or style.",
-      magic_prompt_option: 'OFF'
+      magic_prompt_option: 'OFF',
+      upscale_factor: Number(scale) || 2,
+      scale: Number(scale) || 2
     }
     formData.append('image_request', JSON.stringify(imageRequest))
 
