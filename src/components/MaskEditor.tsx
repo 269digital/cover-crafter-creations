@@ -72,19 +72,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
   const resizePreview = () => {
     if (!imgEl || !containerRef.current || !previewCanvasRef.current) return;
-    const containerWidth = containerRef.current.clientWidth;
-    const maxHeight = 640; // a bit taller for editing
 
-    // Desired viewport aspect from cover type
-    const aspect = (coverType && coverType !== 'eBook Cover') ? 1 : (2/3); // 2:3 for ebook, 1:1 otherwise
-
-    // Compute CSS size for the preview canvas based on aspect
-    let cssW = containerWidth;
-    let cssH = Math.round(cssW * (1/aspect)); // aspect = width/height (2/3 => height = width * 3/2)
-    if (cssH > maxHeight) {
-      cssH = maxHeight;
-      cssW = Math.round(cssH * aspect);
-    }
+    // Measure the aspect box (CSS enforces exact 2:3 or 1:1)
+    const rect = containerRef.current.getBoundingClientRect();
+    const cssW = Math.max(1, Math.round(rect.width));
+    const cssH = Math.max(1, Math.round(rect.height));
 
     // Handle DPR for crisp drawing
     const dpr = Math.max(1, window.devicePixelRatio || 1);
