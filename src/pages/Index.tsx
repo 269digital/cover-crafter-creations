@@ -19,8 +19,8 @@ const Index = () => {
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Palette className="h-10 w-10 md:h-12 md:w-12 text-white" />
-            <h1 className="text-3xl md:text-4xl font-bold text-white font-brand">Cover Artisan</h1>
+            <Palette className="h-12 w-12 md:h-14 md:w-14 text-white" />
+            <h1 className="text-4xl md:text-5xl font-bold text-white font-brand">Cover Artisan</h1>
           </div>
           <Button 
             variant="secondary" 
