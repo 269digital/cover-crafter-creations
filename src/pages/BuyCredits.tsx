@@ -225,9 +225,6 @@ const BuyCredits = () => {
         </div>
 
         <div className="mt-8 text-center mb-8">
-          <p className="text-sm text-muted-foreground">
-            *A "complete project" includes generating multiple concepts and one final high-resolution upscale.
-          </p>
         </div>
 
         <div className="mt-12 text-center">
