@@ -35,38 +35,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('No user found for credit refresh');
       return;
     }
-    
+
     console.log('Refreshing credits for user:', user.id, 'email:', user.email);
     try {
+      // Try to fetch existing profile
       const { data, error } = await supabase
         .from("profiles")
         .select("credits, user_id, email")
         .eq("user_id", user.id)
-        .single(); // Use single() instead of maybeSingle() to get clear errors
-      
-      console.log('Credits query result:', { data, error, userIdSearched: user.id });
-      
+        .maybeSingle();
+
       if (error) {
         console.error("Error fetching credits:", error);
-        // Try to find the profile anyway
-        const { data: allProfiles } = await supabase
+      }
+
+      if (!data) {
+        // Safety net: create profile with 2 starter credits if missing
+        console.warn("No profile found. Creating starter profile with 2 credits.");
+        const { data: inserted, error: insertError } = await supabase
           .from("profiles")
-          .select("credits, user_id, email")
-          .limit(5);
-        console.log('All profiles for debugging:', allProfiles);
-        setCredits(0);
+          .insert({
+            user_id: user.id,
+            email: user.email || "",
+            credits: 2,
+          })
+          .select("credits")
+          .maybeSingle();
+
+        if (insertError) {
+          console.error("Profile insert failed:", insertError);
+          setCredits(0);
+          return;
+        }
+
+        setCredits(inserted?.credits ?? 2);
         return;
       }
-      
-      if (data) {
-        console.log('Profile found:', data, 'Setting credits to:', data.credits);
-        setCredits(data.credits || 0);
-      } else {
-        console.warn("No profile found for user ID:", user.id);
-        setCredits(0);
-      }
-    } catch (error) {
-      console.error("Error refreshing credits:", error);
+
+      console.log('Profile found:', data, 'Setting credits to:', data.credits);
+      setCredits(data.credits || 0);
+    } catch (err) {
+      console.error("Error refreshing credits:", err);
       setCredits(0);
     }
   }, [user]);

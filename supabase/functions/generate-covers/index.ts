@@ -108,25 +108,14 @@ serve(async (req) => {
     let userProfile = profile;
 
     if (!userProfile) {
-      console.log("No profile found, creating one...");
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: userId,
-          credits: 10 // Give new users 10 credits to start
-        }, {
-          onConflict: 'user_id'
-        })
-        .select('credits')
-        .single();
-
-      if (createError) {
-        console.error("Error creating profile:", createError);
-        throw new Error(`Could not create user profile: ${createError.message}`);
-      }
-
-      userProfile = newProfile;
-      console.log("Created/updated profile with credits:", newProfile.credits);
+      console.log("No profile found for user. Blocking generation until profile exists.");
+      return new Response(JSON.stringify({
+        error: 'Profile not found',
+        message: 'Please refresh the page to initialize your account, then try again.',
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
 
     if (userProfile.credits < 2) {

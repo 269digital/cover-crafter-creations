@@ -48,7 +48,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const [displayedUrl, setDisplayedUrl] = useState<string>(imageUrl);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpscaling, setIsUpscaling] = useState(false);
-  const { refreshCredits } = useAuth();
+  const { credits, refreshCredits } = useAuth();
   const navigate = useNavigate();
 
   // Responsive container height based on image aspect ratio (fallback to cover type)
@@ -405,6 +405,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   };
 
   const handleUpscale = async () => {
+    if (credits < 2) {
+      toast.error('Not enough credits. You need 2 credits to upscale.');
+      navigate('/buy-credits');
+      return;
+    }
     try {
       setIsUpscaling(true);
       const srcUrl = (displayedUrl && displayedUrl.startsWith('blob:'))

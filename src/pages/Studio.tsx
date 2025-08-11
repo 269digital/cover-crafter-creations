@@ -80,11 +80,16 @@ const Studio = () => {
   ];
 
   const handleGenerate = async () => {
-    // Credit check temporarily disabled
-    // if (credits === 0) {
-    //   navigate("/buy-credits");
-    //   return;
-    // }
+    // Require at least 2 credits to generate
+    if (credits < 2) {
+      toast({
+        title: "Not enough credits",
+        description: "You need 2 credits to generate covers.",
+        variant: "destructive",
+      });
+      navigate("/buy-credits");
+      return;
+    }
 
     // Validate required fields
     if (!genre || !style || !title || !author || !description) {
@@ -204,7 +209,16 @@ const Studio = () => {
   };
 
   const handleUpscale = async (index: number) => {
-    // Skip credit check for free testing mode
+    // Require at least 2 credits to upscale
+    if (credits < 2) {
+      toast({
+        title: "Not enough credits",
+        description: "You need 2 credits to upscale a cover.",
+        variant: "destructive",
+      });
+      navigate("/buy-credits");
+      return;
+    }
 
     const imageInfo = imageData[index];
     console.log('Attempting to upscale image at index:', index, 'with imageInfo:', imageInfo);
