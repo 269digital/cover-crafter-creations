@@ -185,20 +185,10 @@ const BuyCredits = () => {
                 <CardDescription>{pkg.description}</CardDescription>
                 <div className="py-4">
                   <div className="text-3xl font-bold">{pkg.price}</div>
-                  {Array.isArray((pkg as any).detailsLines) ? (
-                    <div className="mt-2 space-y-1">
-                      {(pkg as any).detailsLines.map((line: string, i: number) => (
-                        <div key={i} className={`text-sm text-muted-foreground ${i === 0 ? 'font-medium' : ''}`}>
-                          {line}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-sm text-muted-foreground">{pkg.credits} credits</div>
-                      <div className="text-xs text-muted-foreground mt-1">{pkg.subtitle}</div>
-                    </>
-                  )}
+                  <>
+                    <div className="text-sm text-muted-foreground">{pkg.credits} credits</div>
+                    <div className="text-xs text-muted-foreground mt-1">{pkg.subtitle}</div>
+                  </>
                 </div>
               </CardHeader>
               
