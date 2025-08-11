@@ -51,11 +51,11 @@ serve(async (req) => {
       const amountInDollars = paymentIntent.amount / 100;
       
       if (amountInDollars === 10) {
-        creditsToAdd = 25; // Starter Pack
+        creditsToAdd = 6; // Starter Pack
       } else if (amountInDollars === 25) {
-        creditsToAdd = 75; // Author Pack
+        creditsToAdd = 24; // Author Pack
       } else if (amountInDollars === 50) {
-        creditsToAdd = 200; // Pro Pack
+        creditsToAdd = 60; // Pro Pack
       } else {
         throw new Error(`Unknown payment amount: $${amountInDollars}`);
       }
