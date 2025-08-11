@@ -19,7 +19,7 @@ const BuyCredits = () => {
       credits: 6,
       price: "$10",
       description: "Perfect for trying out Cover Artisan",
-      subtitle: "(Up to 2 complete cover projects)",
+      subtitle: "1 complete cover project",
       detailsLines: [
         "$10  | 6 credits | 1 cover",
         "Great for trying Cover Artisan",
