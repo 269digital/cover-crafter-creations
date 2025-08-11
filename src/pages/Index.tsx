@@ -103,7 +103,7 @@ const Index = () => {
           <h3 className="text-3xl md:text-4xl font-bold text-white mb-12">Simple, Transparent Pricing</h3>
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
-              { name: "Starter Pack", credits: "8 Credits", subtitle: "(Up to 2 complete cover projects)", price: "$10" },
+              { name: "Starter Pack", credits: "6 Credits", subtitle: "(Up to 2 complete cover projects)", price: "$10" },
               { name: "Author Pack", credits: "24 Credits", subtitle: "(Up to 6 complete cover projects)", price: "$25", popular: true },
               { name: "Pro Pack", credits: "60 Credits", subtitle: "(Up to 15 complete cover projects)", price: "$50" }
             ].map((pkg) => (
