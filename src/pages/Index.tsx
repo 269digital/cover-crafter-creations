@@ -51,7 +51,7 @@ const Index = () => {
             className="shadow-creative text-lg px-10 py-4 h-auto font-semibold"
           >
             <Sparkles className="mr-2 h-5 w-5 text-accent" />
-            Start Creating
+            Start Creating For Free
           </Button>
         </div>
 
