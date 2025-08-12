@@ -140,6 +140,18 @@ const Studio = () => {
         
         // Save creation record to database
         try {
+          // Delete any previous draft creations (those without an upscaled image) for this user
+          try {
+            await supabase
+              .from('creations')
+              .delete()
+              .eq('user_id', user.id)
+              .is('upscaled_image_url', null);
+          } catch (delErr) {
+            console.warn('Could not delete previous drafts:', delErr);
+          }
+
+          // Save the newly generated images as the current draft
           const { error: saveError } = await supabase
             .from('creations')
             .insert({
@@ -363,6 +375,36 @@ const Studio = () => {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  // Rehydrate last draft (non‑upscaled) creation on load so users can return to their latest generated covers
+  React.useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('creations')
+          .select('image_url1,image_url2,image_url3,image_url4,cover_type')
+          .eq('user_id', user.id)
+          .is('upscaled_image_url', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!cancelled && data) {
+          const urls = [data.image_url1, data.image_url2, data.image_url3, data.image_url4].filter(Boolean) as string[];
+          if (urls.length) {
+            if (data.cover_type) setCoverType(data.cover_type);
+            setGeneratedImages(urls);
+            setImageData(urls.map((u) => ({ url: u, isUpscaled: false, isUpscaling: false })));
+          }
+        }
+        if (error) console.warn('Draft fetch error:', error);
+      } catch (e) {
+        console.warn('Draft rehydrate exception:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   // Show loading screen while checking authentication
   if (loading) {
