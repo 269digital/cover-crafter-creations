@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Book cover generator component
 const Studio = () => {
@@ -721,6 +722,16 @@ const Studio = () => {
               </Button>
 
               {/* Results Section */}
+              {generating && (
+                <div className="pt-6 border-t">
+                  <h3 className="font-semibold mb-4">Generating...</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[0,1,2,3].map((i) => (
+                      <Skeleton key={i} className={`${aspectClass} w-full rounded-lg`} />
+                    ))}
+                  </div>
+                </div>
+              )}
               {imageData.length > 0 && (
                 <div className="pt-6 border-t">
                   <h3 className="font-semibold mb-4">Generated Covers</h3>

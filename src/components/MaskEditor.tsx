@@ -240,6 +240,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!previewCanvasRef.current) return;
     previewCanvasRef.current.setPointerCapture(e.pointerId);
     setIsDrawing(true);
@@ -251,6 +253,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!isDrawing || !lastPoint.current) return;
+    e.preventDefault();
+    e.stopPropagation();
     const { x, y } = toImageCoords(e.clientX, e.clientY);
     drawOnMask(lastPoint.current.x, lastPoint.current.y, x, y);
     lastPoint.current = { x, y };
@@ -258,6 +262,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   };
 
   const endDraw = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!previewCanvasRef.current) return;
     previewCanvasRef.current.releasePointerCapture(e.pointerId);
     setIsDrawing(false);
@@ -501,7 +507,10 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
                 onPointerMove={onPointerMove}
                 onPointerUp={endDraw}
                 onPointerLeave={endDraw}
-                className="touch-none block"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                draggable={false}
+                className="touch-none select-none block"
               />
               {/* Upscaled badge overlay placeholder (shown by Studio-like behavior if needed) */}
             </div>

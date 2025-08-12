@@ -178,10 +178,10 @@ const EditCover: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="bg-gradient-hero border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto max-w-5xl px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-2">
               <Palette className="h-6 w-6 text-white" />
@@ -237,7 +237,7 @@ const EditCover: React.FC = () => {
       </header>
 
       <main className="w-full p-0">
-        <section className="container mx-auto px-4 py-4">
+        <section className="container mx-auto max-w-5xl px-4 py-4">
           <Alert>
             <AlertDescription>
               How to use: Paint over areas you want changed (red overlay), then click "Generate Fix". When satisfied, click "Upscale" to save. Tip: Use "Clear Mask" to start over.
@@ -245,7 +245,9 @@ const EditCover: React.FC = () => {
           </Alert>
         </section>
         {imageUrl && originalUrl && coverId && (
-          <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} coverType={coverType} />
+          <section className="container mx-auto max-w-5xl px-4 pb-8">
+            <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} coverType={coverType} />
+          </section>
         )}
       </main>
     </div>
