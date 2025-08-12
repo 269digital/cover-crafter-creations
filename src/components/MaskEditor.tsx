@@ -9,6 +9,9 @@ import { useAuth } from "@/lib/auth";
 import { useNavigate } from "react-router-dom";
 import { Loader2, CreditCard } from "lucide-react";
 
+// Include anon key for apikey header when calling Edge Functions (helps some mobile browsers)
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhc3JzYWRoZWJkbHdneGZma3lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNjMwMDgsImV4cCI6MjA2OTYzOTAwOH0.yvJ9QyMj1DZJ1yYfaE6yvoHkM3pCmck6-HuUiIaXe58";
+
 interface MaskEditorProps {
   imageUrl: string; // display URL (may be proxied)
   originalUrl: string; // original source URL for server-side fetch
@@ -353,7 +356,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/ideogram-edit`,
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: { Authorization: `Bearer ${accessToken}`, apikey: SUPABASE_ANON_KEY },
           body: form,
         }
       );
@@ -369,7 +372,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
               `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/ideogram-edit`,
               {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${t2}` },
+                headers: { Authorization: `Bearer ${t2}`, apikey: SUPABASE_ANON_KEY },
                 body: form,
               }
             );

@@ -120,7 +120,7 @@ const EditCover: React.FC = () => {
           if (!accessToken) throw new Error('Not authenticated');
           const proxied = `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(finalUrl)}`;
           const resp = await fetch(proxied, {
-            headers: { Authorization: `Bearer ${accessToken}` },
+            headers: { Authorization: `Bearer ${accessToken}`, apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhc3JzYWRoZWJkbHdneGZma3lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNjMwMDgsImV4cCI6MjA2OTYzOTAwOH0.yvJ9QyMj1DZJ1yYfaE6yvoHkM3pCmck6-HuUiIaXe58" },
           });
           if (!resp.ok) throw new Error('Failed to load image');
           const blob = await resp.blob();
