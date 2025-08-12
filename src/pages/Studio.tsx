@@ -438,10 +438,6 @@ const Studio = () => {
           } catch (delErr) {
             console.warn('Could not delete stale draft:', delErr);
           }
-          toast({
-            title: 'Previous session expired',
-            description: 'The last generated previews are no longer available. Please generate new covers.',
-          });
         }
       } catch (e) {
         console.warn('Draft rehydrate exception:', e);
