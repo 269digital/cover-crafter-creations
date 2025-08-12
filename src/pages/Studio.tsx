@@ -368,6 +368,21 @@ const Studio = () => {
     }
   };
 
+  // Utility to check if an image URL is still reachable (avoids broken previews)
+  const validateImageUrl = (url: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      try {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        // Cache-buster param to avoid cached 404s
+        img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+      } catch {
+        resolve(false);
+      }
+    });
+  };
+
   // Redirect to auth if not authenticated
   React.useEffect(() => {
     if (!loading && !user) {
@@ -376,10 +391,15 @@ const Studio = () => {
     }
   }, [user, loading, navigate]);
 
-  // Rehydrate last draft (non‑upscaled) creation on load so users can return to their latest generated covers
+  // Rehydrate last draft (non‑upscaled) creation on load; clear if links are dead
   React.useEffect(() => {
     if (!user) return;
     let cancelled = false;
+
+    // Clear previous UI state immediately to avoid showing broken images
+    setGeneratedImages([]);
+    setImageData([]);
+
     (async () => {
       try {
         const { data, error } = await supabase
@@ -390,19 +410,44 @@ const Studio = () => {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (!cancelled && data) {
-          const urls = [data.image_url1, data.image_url2, data.image_url3, data.image_url4].filter(Boolean) as string[];
-          if (urls.length) {
-            if (data.cover_type) setCoverType(data.cover_type);
-            setGeneratedImages(urls);
-            setImageData(urls.map((u) => ({ url: u, isUpscaled: false, isUpscaling: false })));
-          }
-        }
+
         if (error) console.warn('Draft fetch error:', error);
+        if (cancelled || !data) return;
+
+        const urls = [data.image_url1, data.image_url2, data.image_url3, data.image_url4].filter(Boolean) as string[];
+        if (!urls.length) return;
+
+        // Validate each image URL
+        const checks = await Promise.all(urls.map((u) => validateImageUrl(u)));
+        const validUrls = urls.filter((_, i) => checks[i]);
+
+        if (cancelled) return;
+
+        if (validUrls.length) {
+          if (data.cover_type) setCoverType(data.cover_type);
+          setGeneratedImages(validUrls);
+          setImageData(validUrls.map((u) => ({ url: u, isUpscaled: false, isUpscaling: false })));
+        } else {
+          // All links are dead: clean up DB draft and keep UI empty
+          try {
+            await supabase
+              .from('creations')
+              .delete()
+              .eq('user_id', user.id)
+              .is('upscaled_image_url', null);
+          } catch (delErr) {
+            console.warn('Could not delete stale draft:', delErr);
+          }
+          toast({
+            title: 'Previous session expired',
+            description: 'The last generated previews are no longer available. Please generate new covers.',
+          });
+        }
       } catch (e) {
         console.warn('Draft rehydrate exception:', e);
       }
     })();
+
     return () => { cancelled = true; };
   }, [user]);
 
