@@ -430,57 +430,57 @@ const Studio = () => {
     }
   }, [user, loading, navigate]);
 
-  // Rehydrate last draft (non‑upscaled) creation on load; clear if links are dead
+  // Rehydrate last draft (non‑upscaled) creation on load; prefer stored creation id
   React.useEffect(() => {
     if (!user) return;
     let cancelled = false;
 
-    // Clear previous UI state immediately to avoid showing broken images
+    // Reset UI while fetching
     setGeneratedImages([]);
     setImageData([]);
 
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from('creations')
-          .select('id,image_url1,image_url2,image_url3,image_url4,cover_type')
-          .eq('user_id', user.id)
-          .is('upscaled_image_url', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // Try to use the exact creation we just worked with
+        let creationId: string | null = currentCreationId;
+        try { if (!creationId) creationId = sessionStorage.getItem('currentCreationId'); } catch {}
 
-        if (error) console.warn('Draft fetch error:', error);
+        let data: any = null;
+        if (creationId) {
+          const { data: byId, error: byIdErr } = await supabase
+            .from('creations')
+            .select('id,image_url1,image_url2,image_url3,image_url4,cover_type')
+            .eq('id', creationId)
+            .maybeSingle();
+          if (byIdErr) console.warn('Draft fetch by id error:', byIdErr);
+          data = byId;
+        }
+
+        // Fallback to latest draft
+        if (!data) {
+          const { data: latest, error } = await supabase
+            .from('creations')
+            .select('id,image_url1,image_url2,image_url3,image_url4,cover_type')
+            .eq('user_id', user.id)
+            .is('upscaled_image_url', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (error) console.warn('Draft fetch error:', error);
+          data = latest;
+        }
+
         if (cancelled || !data) return;
 
         const urls = [data.image_url1, data.image_url2, data.image_url3, data.image_url4].filter(Boolean) as string[];
         if (!urls.length) return;
 
-        // Validate each image URL
-        const checks = await Promise.all(urls.map((u) => validateImageUrl(u)));
-        const validUrls = urls.filter((_, i) => checks[i]);
-
-        if (cancelled) return;
-
-        if (validUrls.length) {
-          if (data.cover_type) setCoverType(data.cover_type);
-          setGeneratedImages(validUrls);
-          setImageData(validUrls.map((u) => ({ url: u, isUpscaled: false, isUpscaling: false })));
-          if (data.id) {
-            setCurrentCreationId(data.id as string);
-            try { sessionStorage.setItem('currentCreationId', data.id as string); } catch {}
-          }
-        } else {
-          // All links are dead: clean up DB draft and keep UI empty
-          try {
-            await supabase
-              .from('creations')
-              .delete()
-              .eq('user_id', user.id)
-              .is('upscaled_image_url', null);
-          } catch (delErr) {
-            console.warn('Could not delete stale draft:', delErr);
-          }
+        if (data.cover_type) setCoverType(data.cover_type);
+        setGeneratedImages(urls);
+        setImageData(urls.map((u) => ({ url: u, isUpscaled: false, isUpscaling: false })));
+        if (data.id) {
+          setCurrentCreationId(data.id as string);
+          try { sessionStorage.setItem('currentCreationId', data.id as string); } catch {}
         }
       } catch (e) {
         console.warn('Draft rehydrate exception:', e);
