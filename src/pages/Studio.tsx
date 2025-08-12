@@ -319,23 +319,30 @@ const Studio = () => {
   const handleEdit = async (imageUrl: string, index?: number) => {
     setEditingIndex(index ?? null);
     try {
-      // Try to find the creation record that contains this image URL
-      const { data: existing, error: findError } = await supabase
+      // Prefer the latest draft creation for this user
+      const { data: draft } = await supabase
         .from('creations')
         .select('id,image_url1,image_url2,image_url3,image_url4')
         .eq('user_id', user.id)
-        .or(`image_url1.eq."${imageUrl}",image_url2.eq."${imageUrl}",image_url3.eq."${imageUrl}",image_url4.eq."${imageUrl}"`)
+        .is('upscaled_image_url', null)
         .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      if (existing?.id) {
+      if (draft?.id) {
         let idx = 1;
-        if (existing.image_url1 === imageUrl) idx = 1;
-        else if (existing.image_url2 === imageUrl) idx = 2;
-        else if (existing.image_url3 === imageUrl) idx = 3;
-        else if (existing.image_url4 === imageUrl) idx = 4;
-
-        navigate(`/edit/${existing.id}?img=${idx}`);
+        const preferred = typeof index === 'number' ? index + 1 : undefined;
+        if (preferred) {
+          const col = [draft.image_url1, draft.image_url2, draft.image_url3, draft.image_url4][preferred - 1];
+          if (col === imageUrl) idx = preferred;
+        }
+        if (!preferred || [draft.image_url1, draft.image_url2, draft.image_url3, draft.image_url4].every((u) => u !== imageUrl)) {
+          if (draft.image_url1 === imageUrl) idx = 1;
+          else if (draft.image_url2 === imageUrl) idx = 2;
+          else if (draft.image_url3 === imageUrl) idx = 3;
+          else if (draft.image_url4 === imageUrl) idx = 4;
+        }
+        navigate(`/edit/${draft.id}?img=${idx}`);
         return;
       }
 

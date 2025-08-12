@@ -29,10 +29,19 @@ serve(async (req) => {
       });
     }
 
-    // Only allow ideogram images
-    if (!/^https:\/\/ideogram\.ai\//.test(target)) {
-      return new Response(JSON.stringify({ error: 'Forbidden domain' }), {
-        status: 403,
+    // Only allow ideogram images (including subdomains)
+    try {
+      const t = new URL(target);
+      const allowed = t.protocol === 'https:' && (t.hostname === 'ideogram.ai' || t.hostname.endsWith('.ideogram.ai'));
+      if (!allowed) {
+        return new Response(JSON.stringify({ error: 'Forbidden domain' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } catch (_) {
+      return new Response(JSON.stringify({ error: 'Invalid target URL' }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
