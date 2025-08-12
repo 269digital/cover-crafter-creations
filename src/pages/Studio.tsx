@@ -36,6 +36,7 @@ const Studio = () => {
     isUpscaling: boolean;
   }>>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [currentCreationId, setCurrentCreationId] = useState<string | null>(null);
 
   const aspectRatio = coverType === "eBook Cover" ? "ASPECT_2_3" : "ASPECT_1_1";
   const aspectClass = coverType === "eBook Cover" ? "aspect-[2/3]" : "aspect-square";
@@ -152,7 +153,7 @@ const Studio = () => {
           }
 
           // Save the newly generated images as the current draft
-          const { error: saveError } = await supabase
+          const { data: created, error: saveError } = await supabase
             .from('creations')
             .insert({
               user_id: user.id,
@@ -162,10 +163,16 @@ const Studio = () => {
               image_url3: imageUrls[2] || null,
               image_url4: imageUrls[3] || null,
               cover_type: coverType
-            });
+            })
+            .select('id')
+            .single();
           
           if (saveError) {
             console.error('Error saving creation:', saveError);
+          }
+          if (created?.id) {
+            setCurrentCreationId(created.id);
+            try { sessionStorage.setItem('currentCreationId', created.id); } catch {}
           }
         } catch (saveError) {
           console.error('Error saving creation:', saveError);
@@ -319,34 +326,56 @@ const Studio = () => {
   const handleEdit = async (imageUrl: string, index?: number) => {
     setEditingIndex(index ?? null);
     try {
-      // Prefer the latest draft creation for this user
-      const { data: draft } = await supabase
-        .from('creations')
-        .select('id,image_url1,image_url2,image_url3,image_url4')
-        .eq('user_id', user.id)
-        .is('upscaled_image_url', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const preferred = typeof index === 'number' ? index + 1 : undefined;
 
-      if (draft?.id) {
-        let idx = 1;
-        const preferred = typeof index === 'number' ? index + 1 : undefined;
-        if (preferred) {
-          const col = [draft.image_url1, draft.image_url2, draft.image_url3, draft.image_url4][preferred - 1];
-          if (col === imageUrl) idx = preferred;
+      // Use stored creation id when available
+      let storedId = currentCreationId as string | null;
+      try { if (!storedId) storedId = sessionStorage.getItem('currentCreationId'); } catch {}
+
+      if (storedId) {
+        const { data: rec } = await supabase
+          .from('creations')
+          .select('id,image_url1,image_url2,image_url3,image_url4')
+          .eq('id', storedId)
+          .maybeSingle();
+
+        if (rec?.id) {
+          const urls = [rec.image_url1, rec.image_url2, rec.image_url3, rec.image_url4];
+          let idx = 1;
+          if (preferred && urls[preferred - 1] === imageUrl) {
+            idx = preferred;
+            navigate(`/edit/${rec.id}?img=${idx}`);
+            return;
+          }
+          const found = urls.findIndex((u) => u === imageUrl);
+          if (found >= 0) {
+            idx = found + 1;
+            navigate(`/edit/${rec.id}?img=${idx}`);
+            return;
+          }
         }
-        if (!preferred || [draft.image_url1, draft.image_url2, draft.image_url3, draft.image_url4].every((u) => u !== imageUrl)) {
-          if (draft.image_url1 === imageUrl) idx = 1;
-          else if (draft.image_url2 === imageUrl) idx = 2;
-          else if (draft.image_url3 === imageUrl) idx = 3;
-          else if (draft.image_url4 === imageUrl) idx = 4;
-        }
-        navigate(`/edit/${draft.id}?img=${idx}`);
-        return;
       }
 
-      // Fallback: create a new creation record for this single image
+      // Fallback: search recent creations for a match
+      const { data: list } = await supabase
+        .from('creations')
+        .select('id,image_url1,image_url2,image_url3,image_url4,created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (list && list.length) {
+        for (const rec of list) {
+          const urls = [rec.image_url1, rec.image_url2, rec.image_url3, rec.image_url4];
+          const found = urls.findIndex((u) => u === imageUrl);
+          if (found >= 0) {
+            navigate(`/edit/${rec.id}?img=${found + 1}`);
+            return;
+          }
+        }
+      }
+
+      // Last resort: create a new creation record for this single image
       const { data: inserted, error: insertError } = await supabase
         .from('creations')
         .insert({
@@ -361,6 +390,9 @@ const Studio = () => {
       if (insertError || !inserted?.id) {
         throw new Error(insertError?.message || 'Unable to prepare edit');
       }
+
+      setCurrentCreationId(inserted.id);
+      try { sessionStorage.setItem('currentCreationId', inserted.id); } catch {}
 
       navigate(`/edit/${inserted.id}?img=1`);
     } catch (e: any) {
@@ -411,7 +443,7 @@ const Studio = () => {
       try {
         const { data, error } = await supabase
           .from('creations')
-          .select('image_url1,image_url2,image_url3,image_url4,cover_type')
+          .select('id,image_url1,image_url2,image_url3,image_url4,cover_type')
           .eq('user_id', user.id)
           .is('upscaled_image_url', null)
           .order('created_at', { ascending: false })
@@ -434,6 +466,10 @@ const Studio = () => {
           if (data.cover_type) setCoverType(data.cover_type);
           setGeneratedImages(validUrls);
           setImageData(validUrls.map((u) => ({ url: u, isUpscaled: false, isUpscaling: false })));
+          if (data.id) {
+            setCurrentCreationId(data.id as string);
+            try { sessionStorage.setItem('currentCreationId', data.id as string); } catch {}
+          }
         } else {
           // All links are dead: clean up DB draft and keep UI empty
           try {
