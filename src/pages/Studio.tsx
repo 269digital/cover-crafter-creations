@@ -308,8 +308,18 @@ const Studio = () => {
 
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
+    try {
+      setGeneratedImages([]);
+      setImageData([]);
+      setCurrentCreationId(null);
+      try {
+        sessionStorage.removeItem('currentCreationId');
+        sessionStorage.removeItem('editViewportHint');
+      } catch {}
+      await signOut();
+    } finally {
+      navigate("/");
+    }
   };
 
   const captureEditViewportHintFromEvent = (e: React.MouseEvent) => {
@@ -721,6 +731,10 @@ const Studio = () => {
                             src={image.url} 
                             alt={`Generated cover ${index + 1}`}
                             className={`${aspectClass} w-full ${coverType === "eBook Cover" ? "object-cover" : "object-contain"} rounded-lg shadow-sm bg-muted`}
+                            onError={() => {
+                              setImageData(prev => prev.filter((_, i2) => i2 !== index));
+                              setGeneratedImages(prev => prev.filter((_, i2) => i2 !== index));
+                            }}
                           />
                           {image.isUpscaled && (
                           <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
@@ -843,22 +857,6 @@ const Studio = () => {
                 </div>
               )}
 
-              {/* Placeholder when no images */}
-              {!generating && imageData.length === 0 && (
-                <div className="pt-6 border-t">
-                  <h3 className="font-semibold mb-4">Generated Covers</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div 
-                        key={i} 
-                        className={`${aspectClass} bg-muted rounded-lg flex items-center justify-center text-muted-foreground`}
-                      >
-                        Cover {i}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
