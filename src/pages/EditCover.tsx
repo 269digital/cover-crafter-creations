@@ -26,7 +26,7 @@ const EditCover: React.FC = () => {
   const { coverId } = useParams<{ coverId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { credits, signOut } = useAuth();
+  const { credits, signOut, session, loading: authLoading } = useAuth();
   const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +37,12 @@ const EditCover: React.FC = () => {
   useEffect(() => {
     document.title = `Edit Cover | Cover Artisan`;
   }, []);
+
+  useEffect(() => {
+    if (!authLoading && !session) {
+      navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+    }
+  }, [authLoading, session, navigate]);
 
   useEffect(() => {
     let objectUrl: string | null = null;

@@ -343,9 +343,13 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
 
       const { data: session } = await supabase.auth.getSession();
       const accessToken = session.session?.access_token;
-      if (!accessToken) throw new Error('Not authenticated');
+      if (!accessToken) {
+        toast.error('Please sign in to edit your cover');
+        navigate('/auth');
+        return;
+      }
 
-      const editResp = await fetch(
+      let editResp = await fetch(
         `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/ideogram-edit`,
         {
           method: 'POST',
@@ -353,6 +357,25 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
           body: form,
         }
       );
+
+      // Retry once if token expired
+      if (editResp.status === 401) {
+        try {
+          await supabase.auth.refreshSession();
+          const { data: s2 } = await supabase.auth.getSession();
+          const t2 = s2.session?.access_token;
+          if (t2) {
+            editResp = await fetch(
+              `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/ideogram-edit`,
+              {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${t2}` },
+                body: form,
+              }
+            );
+          }
+        } catch {}
+      }
 
       const editJson = await editResp.json().catch(async () => ({ error: await editResp.text().catch(() => 'Edit failed') }));
       if (!editResp.ok || !editJson?.success) {
