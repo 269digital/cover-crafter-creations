@@ -115,13 +115,23 @@ const EditCover: React.FC = () => {
         const host = new URL(finalUrl).hostname;
         const isIdeogram = host === 'ideogram.ai' || host.endsWith('.ideogram.ai');
         if (isIdeogram) {
-          const { data: session } = await supabase.auth.getSession();
-          const accessToken = session.session?.access_token;
+          await supabase.auth.refreshSession().catch(() => {});
+          const { data: sess } = await supabase.auth.getSession();
+          let accessToken = sess.session?.access_token;
           if (!accessToken) throw new Error('Not authenticated');
           const proxied = `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(finalUrl)}`;
-          const resp = await fetch(proxied, {
+          let resp = await fetch(proxied, {
             headers: { Authorization: `Bearer ${accessToken}`, apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhc3JzYWRoZWJkbHdneGZma3lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNjMwMDgsImV4cCI6MjA2OTYzOTAwOH0.yvJ9QyMj1DZJ1yYfaE6yvoHkM3pCmck6-HuUiIaXe58" },
           });
+          if (resp.status === 401) {
+            await supabase.auth.refreshSession().catch(() => {});
+            const { data: sess2 } = await supabase.auth.getSession();
+            accessToken = sess2.session?.access_token;
+            if (!accessToken) throw new Error('Not authenticated');
+            resp = await fetch(proxied, {
+              headers: { Authorization: `Bearer ${accessToken}`, apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhc3JzYWRoZWJkbHdneGZma3lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNjMwMDgsImV4cCI6MjA2OTYzOTAwOH0.yvJ9QyMj1DZJ1yYfaE6yvoHkM3pCmck6-HuUiIaXe58" },
+            });
+          }
           if (!resp.ok) throw new Error('Failed to load image');
           const blob = await resp.blob();
           objectUrl = URL.createObjectURL(blob);

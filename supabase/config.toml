@@ -69,3 +69,6 @@ verify_jwt = true
 
 [functions.proxy-image]
 verify_jwt = true
+
+[functions.ideogram-edit]
+verify_jwt = false

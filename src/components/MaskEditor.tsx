@@ -344,51 +344,40 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
       form.append('mask', maskBlob, 'mask.png');
       form.append('cover_id', coverId);
 
-      const { data: session } = await supabase.auth.getSession();
-      const accessToken = session.session?.access_token;
-      if (!accessToken) {
+      // Proactively refresh auth token for mobile reliability
+      await supabase.auth.refreshSession().catch(() => {});
+      const { data: sessData } = await supabase.auth.getSession();
+      const accessTokenFresh = sessData.session?.access_token;
+      if (!accessTokenFresh) {
         toast.error('Please sign in to edit your cover');
         navigate('/auth');
         return;
       }
 
-      let editResp = await fetch(
-        `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/ideogram-edit`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${accessToken}`, apikey: SUPABASE_ANON_KEY },
-          body: form,
+      // Call edge function via supabase.functions.invoke to ensure consistent auth handling
+      let invokeRes = await supabase.functions.invoke('ideogram-edit', {
+        body: form,
+        headers: { apikey: SUPABASE_ANON_KEY },
+      });
+
+      // Retry once on 401 after a forced refresh
+      if ((invokeRes as any)?.error?.context?.status === 401) {
+        await supabase.auth.refreshSession().catch(() => {});
+        const { data: sess2 } = await supabase.auth.getSession();
+        if (sess2.session?.access_token) {
+          invokeRes = await supabase.functions.invoke('ideogram-edit', {
+            body: form,
+            headers: { apikey: SUPABASE_ANON_KEY },
+          });
         }
-      );
-
-      // Retry once if token expired
-      if (editResp.status === 401) {
-        try {
-          await supabase.auth.refreshSession();
-          const { data: s2 } = await supabase.auth.getSession();
-          const t2 = s2.session?.access_token;
-          if (t2) {
-            editResp = await fetch(
-              `https://qasrsadhebdlwgxffkya.supabase.co/functions/v1/ideogram-edit`,
-              {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${t2}`, apikey: SUPABASE_ANON_KEY },
-                body: form,
-              }
-            );
-          }
-        } catch {}
       }
 
-      const editJson = await editResp.json().catch(async () => ({ error: await editResp.text().catch(() => 'Edit failed') }));
-      if (!editResp.ok || !editJson?.success) {
-        const baseMsg = editJson?.error || 'Edit failed';
-        const det = editJson?.details ? `: ${typeof editJson.details === 'string' ? editJson.details : JSON.stringify(editJson.details)}` : '';
-        console.error('Edit error details:', editJson);
-        throw new Error(`${baseMsg}${det}`);
+      if (invokeRes.error || !invokeRes.data?.success) {
+        console.error('Edit error details:', invokeRes.error || invokeRes.data);
+        throw new Error((invokeRes.error as any)?.message || invokeRes.data?.error || 'Edit failed');
       }
 
-      const editedUrl: string = editJson.storedImageUrl || editJson.editedImage;
+      const editedUrl: string = invokeRes.data.storedImageUrl || invokeRes.data.editedImage;
       if (!editedUrl) throw new Error('Missing edited image URL');
 
       // If the edited image is stored in our private bucket, sign it before display
