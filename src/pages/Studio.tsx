@@ -697,7 +697,7 @@ const Studio = () => {
               <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                 <CreditCard className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Important:</strong> Only upscaled covers will be saved and be downloadable in My Covers.
+                  <strong>Important:</strong> Only upscaled covers will be saved and be downloadable in My Covers. Please don't delay editing or upscaling a cover you want to work on. Covers in the studio are temporary and you may be unable to retrieve them later if you leave and come back.
                 </AlertDescription>
               </Alert>
 
