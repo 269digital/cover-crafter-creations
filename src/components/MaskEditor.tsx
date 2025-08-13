@@ -488,7 +488,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
         <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
           <CreditCard className="h-4 w-4" />
           <AlertDescription>
-            <strong>Important:</strong> You will lose your cover if you navigate away from this page without upscaling. You must upscale to save this to your My Covers page.
+            <strong>Important:</strong> You must upscale to save this to your My Covers page.
           </AlertDescription>
         </Alert>
       </div>
@@ -552,7 +552,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
           <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
             <CreditCard className="h-4 w-4" />
             <AlertDescription>
-              <strong>Important:</strong> You will lose your cover if you navigate away from this page without upscaling. You must upscale to save this to your My Covers page.
+              <strong>Important:</strong> You must upscale to save this to your My Covers page.
             </AlertDescription>
           </Alert>
           {/* Upscale and Download buttons will be available from the Studio-like flow after upscaling */}
