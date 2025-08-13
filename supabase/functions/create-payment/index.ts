@@ -30,8 +30,11 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    // Parse request body
-    const { packageName, credits, price } = await req.json();
+    // Parse request body (frontend may send price/credits but we will enforce server-side mapping)
+    const body = await req.json();
+    const packageName: string = body.packageName;
+    const clientPrice: string | undefined = body.price;
+    const clientCredits: number | undefined = body.credits;
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -54,18 +57,42 @@ serve(async (req) => {
       customerId = customer.id;
     }
 
+    // Map package to Stripe Price ID and server-authoritative credits
+    const PRICE_AUTHOR = Deno.env.get("STRIPE_PRICE_AUTHOR");
+    const PRICE_PRO = Deno.env.get("STRIPE_PRICE_PRO");
+
+    let chosenPriceId: string | null = null;
+    let serverCredits: number | null = null;
+
+    if (packageName === "Author Pack") {
+      chosenPriceId = PRICE_AUTHOR || null;
+      serverCredits = 24; // Keep in sync with UI
+    } else if (packageName === "Pro Pack") {
+      chosenPriceId = PRICE_PRO || null;
+      serverCredits = 60; // Keep in sync with UI
+    } else if (packageName === "Starter Pack") {
+      // No Price ID configured; fall back to ad-hoc price and credits from UI
+      serverCredits = typeof clientCredits === 'number' ? clientCredits : 6;
+    }
+
+    if ((packageName === "Author Pack" || packageName === "Pro Pack") && !chosenPriceId) {
+      throw new Error(`Missing Stripe Price ID secret for ${packageName}`);
+    }
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      line_items: [
+      line_items: chosenPriceId ? [
+        { price: chosenPriceId, quantity: 1 }
+      ] : [
         {
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: `Covers by AI - ${packageName}`,
-                description: `${credits} AI-generated book cover credits`,
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Covers by AI - ${packageName}`,
+              description: `${serverCredits ?? clientCredits ?? ''} AI-generated book cover credits`,
             },
-            unit_amount: Math.round(parseFloat(price.replace('$', '')) * 100), // Convert to cents
+            unit_amount: clientPrice ? Math.round(parseFloat(clientPrice.replace('$', '')) * 100) : undefined,
           },
           quantity: 1,
         },
@@ -75,12 +102,12 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/buy-credits?payment=canceled`,
       metadata: {
         user_id: user.id,
-        credits: credits.toString(),
+        credits: String(serverCredits ?? clientCredits ?? ''),
         package_name: packageName,
       },
     });
 
-    console.log(`Created checkout session ${session.id} for user ${user.id}`);
+    console.log(`Created checkout session ${session.id} for user ${user.id} [${packageName}]`);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
