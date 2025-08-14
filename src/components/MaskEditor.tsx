@@ -458,8 +458,9 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
   const handleSaveEdit = async () => {
     try {
       setIsUpscaling(true);
-      // For re-edits, we want to save the current displayed/edited image at its current resolution
-      const srcUrl = displayedUrl || originalUrl || imageUrl;
+      const srcUrl = (displayedUrl && displayedUrl.startsWith('blob:'))
+        ? (originalUrl || imageUrl)
+        : (displayedUrl || originalUrl || imageUrl);
       
       const { data: saveData, error: saveError } = await supabase.functions.invoke('save-edit', {
         body: { coverId, editedImageUrl: srcUrl }

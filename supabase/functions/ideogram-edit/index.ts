@@ -66,11 +66,9 @@ serve(async (req) => {
     // If image file not provided, try fetching from image_url server-side
     if (!imageFile && imageUrlFromForm) {
       try {
-        console.log(`Fetching image from URL: ${imageUrlFromForm}`)
         const fetched = await fetch(imageUrlFromForm)
         if (!fetched.ok) throw new Error(`Failed to fetch image: ${fetched.status}`)
         const buf = await fetched.arrayBuffer()
-        console.log(`Downloaded image size: ${buf.byteLength} bytes`)
         const blob = new Blob([buf], { type: fetched.headers.get('content-type') || 'image/png' })
         imageFile = new File([blob], 'image.png', { type: blob.type })
       } catch (e) {
@@ -88,49 +86,14 @@ serve(async (req) => {
       )
     }
 
-    // Log input image information
-    console.log(`Input image: ${imageFile.name}, size: ${imageFile.size} bytes, type: ${imageFile.type}`)
-    
-    // Get image dimensions using a simple method
-    try {
-      const imageBuffer = await imageFile.arrayBuffer()
-      const view = new DataView(imageBuffer)
-      let width = 0, height = 0
-      
-      // PNG signature check and dimension extraction
-      if (view.getUint32(0) === 0x89504E47) {
-        // PNG file - IHDR chunk starts at byte 16
-        width = view.getUint32(16)
-        height = view.getUint32(20)
-      } else if (view.getUint16(0) === 0xFFD8) {
-        // JPEG file - scan for SOF0 marker
-        let offset = 2
-        while (offset < imageBuffer.byteLength - 10) {
-          if (view.getUint16(offset) === 0xFFC0) {
-            height = view.getUint16(offset + 5)
-            width = view.getUint16(offset + 7)
-            break
-          }
-          offset += 2 + view.getUint16(offset + 2)
-        }
-      }
-      
-      console.log(`INPUT IMAGE RESOLUTION: ${width} x ${height}`)
-    } catch (e) {
-      console.log(`Could not determine input image resolution: ${e.message}`)
-    }
-
     // Build Ideogram edit request (multipart)
     const ideogramForm = new FormData()
     ideogramForm.append('image', imageFile, imageFile.name || 'image.jpg')
     ideogramForm.append('mask', maskFile, maskFile.name || 'mask.png')
     const editPrompt = 'Remove all content painted on the mask and seamlessly fill the removed areas with natural background. Preserve surrounding details, lighting, and textures.'
     ideogramForm.append('prompt', editPrompt)
-    // Add aspect ratio to try to preserve resolution
-    ideogramForm.append('aspect_ratio', 'ASPECT_2_3')
     // Optionally: ideogramForm.append('magic_prompt', 'AUTO')
 
-    console.log('Sending request to Ideogram edit API...')
     const ideogramResp = await fetch('https://api.ideogram.ai/v1/ideogram-v3/edit', {
       method: 'POST',
       headers: {
@@ -141,7 +104,6 @@ serve(async (req) => {
 
     if (!ideogramResp.ok) {
       const t = await ideogramResp.text()
-      console.error(`Ideogram API error (${ideogramResp.status}): ${t}`)
       return new Response(
         JSON.stringify({ error: 'Ideogram edit failed', details: t, status: ideogramResp.status }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -149,13 +111,6 @@ serve(async (req) => {
     }
 
     const editData = await ideogramResp.json().catch(() => null)
-    console.log('Ideogram API response:', JSON.stringify(editData, null, 2))
-    
-    // Log resolution information from API response
-    if (editData?.data?.[0]?.resolution) {
-      console.log(`IDEOGRAM OUTPUT RESOLUTION: ${editData.data[0].resolution}`)
-    }
-    
     const editedUrl = editData?.data?.[0]?.url || editData?.image_url || editData?.url
 
     if (!editedUrl) {
@@ -164,14 +119,10 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-    
-    console.log(`Edited image URL received: ${editedUrl}`)
 
     // Download the edited image and save to Storage, then update the creation record
-    console.log(`Downloading edited image from: ${editedUrl}`)
     const downloaded = await fetch(editedUrl)
     if (!downloaded.ok) {
-      console.error(`Failed to download edited image: ${downloaded.status}`)
       return new Response(
         JSON.stringify({ error: 'Failed to download edited image' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -179,33 +130,6 @@ serve(async (req) => {
     }
 
     const buffer = await downloaded.arrayBuffer()
-    console.log(`Downloaded edited image size: ${buffer.byteLength} bytes`)
-    
-    // Try to determine the final image resolution
-    try {
-      const view = new DataView(buffer)
-      let width = 0, height = 0
-      
-      if (view.getUint32(0) === 0x89504E47) {
-        width = view.getUint32(16)
-        height = view.getUint32(20)
-      } else if (view.getUint16(0) === 0xFFD8) {
-        let offset = 2
-        while (offset < buffer.byteLength - 10) {
-          if (view.getUint16(offset) === 0xFFC0) {
-            height = view.getUint16(offset + 5)
-            width = view.getUint16(offset + 7)
-            break
-          }
-          offset += 2 + view.getUint16(offset + 2)
-        }
-      }
-      
-      console.log(`FINAL STORED IMAGE RESOLUTION: ${width} x ${height}`)
-    } catch (e) {
-      console.log(`Could not determine final image resolution: ${e.message}`)
-    }
-    
     const filePath = `${user.id}/edited/${coverId || 'cover'}_${Date.now()}.png`
 
     const { error: uploadError } = await supabase.storage
