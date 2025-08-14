@@ -246,13 +246,7 @@ const EditCover: React.FC = () => {
         </section>
         {imageUrl && originalUrl && coverId && (
           <section className="container mx-auto max-w-5xl px-4 pb-8">
-            <MaskEditor 
-              imageUrl={imageUrl} 
-              originalUrl={originalUrl} 
-              coverId={coverId} 
-              coverType={coverType}
-              editMode={searchParams.get('mode') === 're-edit' ? 're-edit' : 'first-edit'}
-            />
+            <MaskEditor imageUrl={imageUrl} originalUrl={originalUrl} coverId={coverId} coverType={coverType} />
           </section>
         )}
       </main>

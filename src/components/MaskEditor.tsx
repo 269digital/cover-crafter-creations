@@ -17,7 +17,6 @@ interface MaskEditorProps {
   originalUrl: string; // original source URL for server-side fetch
   coverId: string;
   coverType?: string; // 'eBook Cover' | 'Album Cover' | 'Audiobook Cover'
-  editMode?: 'first-edit' | 're-edit'; // determines which buttons to show
 }
 
 // Helper to load an image and ensure it's decoded before use
@@ -38,7 +37,7 @@ const PREVIEW_SIZE = { w: 892, h: 1248 };
 
 type Mode = "remove" | "restore";
 
-export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, coverId, coverType = 'eBook Cover', editMode = 'first-edit' }) => {
+export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, coverId, coverType = 'eBook Cover' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -455,31 +454,6 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
     }
   };
 
-  const handleSaveEdit = async () => {
-    try {
-      setIsUpscaling(true);
-      const srcUrl = (displayedUrl && displayedUrl.startsWith('blob:'))
-        ? (originalUrl || imageUrl)
-        : (displayedUrl || originalUrl || imageUrl);
-      
-      const { data: saveData, error: saveError } = await supabase.functions.invoke('save-edit', {
-        body: { coverId, editedImageUrl: srcUrl }
-      });
-
-      if (saveError || !saveData?.success) {
-        console.error('Save error:', saveError || saveData);
-        throw new Error((saveError as any)?.message || saveData?.error || 'Save failed');
-      }
-
-      toast.success('Changes saved successfully!');
-      navigate('/my-covers');
-    } catch (e: any) {
-      toast.error(e?.message || 'Save failed');
-    } finally {
-      setIsUpscaling(false);
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Mobile-only controls at top */}
@@ -501,45 +475,22 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
             'Generate Fix'
           )}
         </Button>
-        {editMode === 'first-edit' ? (
-          <>
-            <Button onClick={handleUpscale} className="w-full" disabled={isUpscaling || isGenerating}>
-              {isUpscaling ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Upscaling...
-                </>
-              ) : (
-                'Upscale (-2 credits)'
-              )}
-            </Button>
-            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-              <CreditCard className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Important:</strong> You must upscale to save this to your My Covers page.
-              </AlertDescription>
-            </Alert>
-          </>
-        ) : (
-          <>
-            <Button onClick={handleSaveEdit} className="w-full" disabled={isUpscaling || isGenerating}>
-              {isUpscaling ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes (Free)'
-              )}
-            </Button>
-            <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
-              <CreditCard className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Re-editing:</strong> Save changes for free. This will update your existing cover.
-              </AlertDescription>
-            </Alert>
-          </>
-        )}
+        <Button onClick={handleUpscale} className="w-full" disabled={isUpscaling || isGenerating}>
+          {isUpscaling ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Upscaling...
+            </>
+          ) : (
+            'Upscale (-2 credits)'
+          )}
+        </Button>
+        <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+          <CreditCard className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Important:</strong> You must upscale to save this to your My Covers page.
+          </AlertDescription>
+        </Alert>
       </div>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
@@ -588,45 +539,22 @@ export const MaskEditor: React.FC<MaskEditorProps> = ({ imageUrl, originalUrl, c
               'Generate Fix'
             )}
           </Button>
-          {editMode === 'first-edit' ? (
-            <>
-              <Button onClick={handleUpscale} className="w-full" disabled={isUpscaling || isGenerating}>
-                {isUpscaling ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Upscaling...
-                  </>
-                ) : (
-                  'Upscale (-2 credits)'
-                )}
-              </Button>
-              <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-                <CreditCard className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Important:</strong> You must upscale to save this to your My Covers page.
-                </AlertDescription>
-              </Alert>
-            </>
-          ) : (
-            <>
-              <Button onClick={handleSaveEdit} className="w-full" disabled={isUpscaling || isGenerating}>
-                {isUpscaling ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes (Free)'
-                )}
-              </Button>
-              <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
-                <CreditCard className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Re-editing:</strong> Save changes for free. This will update your existing cover.
-                </AlertDescription>
-              </Alert>
-            </>
-          )}
+          <Button onClick={handleUpscale} className="w-full" disabled={isUpscaling || isGenerating}>
+            {isUpscaling ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Upscaling...
+              </>
+            ) : (
+              'Upscale (-2 credits)'
+            )}
+          </Button>
+          <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+            <CreditCard className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Important:</strong> You must upscale to save this to your My Covers page.
+            </AlertDescription>
+          </Alert>
           {/* Upscale and Download buttons will be available from the Studio-like flow after upscaling */}
 
         </div>
