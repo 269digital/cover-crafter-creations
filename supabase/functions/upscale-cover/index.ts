@@ -265,6 +265,9 @@ if (prompt) imageRequestPayload.prompt = String(prompt)
         const storedImageUrl = publicUrlData.publicUrl
         console.log('Stored image URL:', storedImageUrl)
 
+        // Store the public URL for return
+        globalThis.storedJpgUrl = storedImageUrl
+
         // If coverId is provided, update that creation directly; otherwise, best-effort match by original URLs
         if (coverId) {
           const { error: updateByIdError } = await supabaseClient
@@ -312,35 +315,40 @@ if (prompt) imageRequestPayload.prompt = String(prompt)
       }
     }
 
-// Deduct credits now that the task succeeded and we have a URL
-const newCredits = (profile.credits ?? 0) - 2
-const { error: lateUpdateError } = await supabaseClient
-  .from('profiles')
-  .update({ credits: newCredits })
-  .eq('user_id', user.id)
+    // Start background task first
+    const storePromise = storeImageTask()
 
-if (lateUpdateError) {
-  console.error('Error updating credits after upscaling:', lateUpdateError)
-  return new Response(
-    JSON.stringify({ error: 'Failed to process credits after upscaling' }),
-    { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  )
-}
+    // Deduct credits now that the task succeeded and we have a URL
+    const newCredits = (profile.credits ?? 0) - 2
+    const { error: lateUpdateError } = await supabaseClient
+      .from('profiles')
+      .update({ credits: newCredits })
+      .eq('user_id', user.id)
 
-// Start background task (don't await)
-EdgeRuntime.waitUntil(storeImageTask())
+    if (lateUpdateError) {
+      console.error('Error updating credits after upscaling:', lateUpdateError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to process credits after upscaling' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-// Return immediate response with temporary upscaled image
-return new Response(
-  JSON.stringify({ 
-    success: true,
-    upscaledImage: upscaledImageUrl,
-    resolution: { width: finalW, height: finalH },
-    message: "Image upscaled successfully! It will be permanently saved to your collection shortly.",
-    creditsRemaining: newCredits
-  }),
-  { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-)
+    // Wait for the storage task to complete
+    await storePromise
+
+    // Return the permanent JPG URL instead of temporary PNG URL
+    const finalImageUrl = globalThis.storedJpgUrl || upscaledImageUrl
+
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        upscaledImage: finalImageUrl,
+        resolution: { width: finalW, height: finalH },
+        message: "Image upscaled successfully and saved as JPG!",
+        creditsRemaining: newCredits
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
   } catch (error) {
     console.error('Error in upscale-cover function:', error)
