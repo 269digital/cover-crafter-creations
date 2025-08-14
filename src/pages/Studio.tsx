@@ -143,15 +143,12 @@ const Studio = () => {
         // Save creation record to database
         try {
           // Delete any previous draft creations (those without an upscaled image) for this user
-          // Only delete records that are actually drafts (no upscaled_image_url AND older than 1 hour)
           try {
-            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
             await supabase
               .from('creations')
               .delete()
               .eq('user_id', user.id)
-              .is('upscaled_image_url', null)
-              .lt('created_at', oneHourAgo);
+              .is('upscaled_image_url', null);
           } catch (delErr) {
             console.warn('Could not delete previous drafts:', delErr);
           }
@@ -474,8 +471,9 @@ const Studio = () => {
         if (!data) {
           const { data: latest, error } = await supabase
             .from('creations')
-            .select('id,image_url1,image_url2,image_url3,image_url4,cover_type,upscaled_image_url')
+            .select('id,image_url1,image_url2,image_url3,image_url4,cover_type')
             .eq('user_id', user.id)
+            .is('upscaled_image_url', null)
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -489,17 +487,8 @@ const Studio = () => {
         if (!urls.length) return;
 
         if (data.cover_type) setCoverType(data.cover_type);
-        
-        // Check if we have an upscaled image URL and use it instead of the original
-        const finalUrl = data.upscaled_image_url || urls[0];
-        const hasUpscaledImage = !!data.upscaled_image_url;
-        
-        setGeneratedImages(hasUpscaledImage ? [finalUrl] : urls);
-        setImageData(hasUpscaledImage 
-          ? [{ url: finalUrl, isUpscaled: true, isUpscaling: false }]
-          : urls.map((u) => ({ url: u, isUpscaled: false, isUpscaling: false }))
-        );
-        
+        setGeneratedImages(urls);
+        setImageData(urls.map((u) => ({ url: u, isUpscaled: false, isUpscaling: false })));
         if (data.id) {
           setCurrentCreationId(data.id as string);
           try { sessionStorage.setItem('currentCreationId', data.id as string); } catch {}
