@@ -315,10 +315,15 @@ if (prompt) imageRequestPayload.prompt = String(prompt)
       }
     }
 
-    // Start background task first
-    const storePromise = storeImageTask()
+    // Store image first to get JPG URL quickly
+    try {
+      await storeImageTask()
+    } catch (error) {
+      console.error('Error storing image:', error)
+      // Fall back to temporary URL if storage fails
+    }
 
-    // Deduct credits now that the task succeeded and we have a URL
+    // Deduct credits now that the task succeeded
     const newCredits = (profile.credits ?? 0) - 2
     const { error: lateUpdateError } = await supabaseClient
       .from('profiles')
@@ -333,10 +338,7 @@ if (prompt) imageRequestPayload.prompt = String(prompt)
       )
     }
 
-    // Wait for the storage task to complete
-    await storePromise
-
-    // Return the permanent JPG URL instead of temporary PNG URL
+    // Return the permanent JPG URL if available, otherwise temporary URL
     const finalImageUrl = globalThis.storedJpgUrl || upscaledImageUrl
 
     return new Response(
