@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Download, Image as ImageIcon, Eye, X, Moon, Sun, Trash2, Edit } from "lucide-react";
+import { CreditCard, Download, Image as ImageIcon, Eye, X, Moon, Sun, Trash2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -328,13 +328,6 @@ const MyCovers = () => {
                          onClick={() => setSelectedImage(upscaledImageUrl)}
                        >
                          <Eye className="h-4 w-4" />
-                       </Button>
-                       <Button
-                         size="sm"
-                         variant="secondary"
-                         onClick={() => navigate(`/edit/${creation.id}?mode=re-edit`)}
-                       >
-                         <Edit className="h-4 w-4" />
                        </Button>
                        <Button
                          size="sm"
