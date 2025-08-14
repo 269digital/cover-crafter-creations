@@ -238,7 +238,7 @@ if (prompt) imageRequestPayload.prompt = String(prompt)
 
         const upscaledImageBuffer = await upscaledImageResponse.arrayBuffer()
         const upscaledContentType = upscaledImageResponse.headers.get('content-type') || 'image/jpeg'
-        const upscaledExt = upscaledContentType.includes('png') ? 'png' : (upscaledContentType.includes('webp') ? 'webp' : 'jpg')
+        const upscaledExt = 'jpg' // Always use JPG format
         const timestamp = Date.now()
         const fileName = `${user.id}/${timestamp}_upscaled.${upscaledExt}`
         
@@ -248,7 +248,7 @@ if (prompt) imageRequestPayload.prompt = String(prompt)
         const { data: uploadData, error: uploadError } = await supabaseClient.storage
           .from('upscaled-covers')
           .upload(fileName, upscaledImageBuffer, {
-            contentType: upscaledContentType,
+            contentType: 'image/jpeg',
             upsert: false
           })
 
