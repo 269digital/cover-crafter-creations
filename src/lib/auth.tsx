@@ -7,10 +7,10 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   credits: number;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<{ error: any }>;
-  resetPassword: (email: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: unknown }>;
+  signIn: (email: string, password: string) => Promise<{ error: unknown }>;
+  signOut: () => Promise<{ error: unknown }>;
+  resetPassword: (email: string) => Promise<{ error: unknown }>;
   refreshCredits: () => Promise<void>;
 }
 
@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("credits, user_id, email")
+        .select("credits, user_id, email, welcome_email_sent")
         .eq("user_id", user.id)
         .single(); // Use single() instead of maybeSingle() to get clear errors
       
@@ -61,6 +61,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data) {
         console.log('Profile found:', data, 'Setting credits to:', data.credits);
         setCredits(data.credits || 0);
+
+        if (!data.welcome_email_sent && data.email) {
+          try {
+            await supabase.functions.invoke('send-welcome-email', {
+              body: { email: data.email }
+            });
+            await supabase
+              .from('profiles')
+              .update({ welcome_email_sent: true })
+              .eq('user_id', user.id);
+          } catch (emailError) {
+            console.error('Error sending welcome email:', emailError);
+          }
+        }
       } else {
         console.warn("No profile found for user ID:", user.id);
         setCredits(0);
