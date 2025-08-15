@@ -7,6 +7,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function sendPurchaseConfirmationEmail(email: string, credits: number) {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "no-reply@example.com";
+  if (!apiKey) {
+    console.error("Missing RESEND_API_KEY");
+    return;
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      from,
+      to: email,
+      subject: "Purchase Confirmation",
+      html: `<p>Thank you for your purchase! ${credits} credits have been added to your account.</p>`,
+    }),
+  });
+
+  if (!response.ok) {
+    console.error("Failed to send confirmation email:", await response.text());
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -97,8 +124,16 @@ serve(async (req) => {
 
       console.log(`Successfully added ${creditsToAdd} credits to user ${user.id}`);
 
-      return new Response(JSON.stringify({ 
-        success: true, 
+      try {
+        if (user.email) {
+          await sendPurchaseConfirmationEmail(user.email, creditsToAdd);
+        }
+      } catch (emailError) {
+        console.error("Error sending confirmation email:", emailError);
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
         credits: creditsToAdd,
         newTotal: newCredits,
         message: `Successfully added ${creditsToAdd} credits to your account! New total: ${newCredits}`
