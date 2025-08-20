@@ -261,7 +261,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (type === 'welcome') {
       console.log(`Sending welcome email to: ${to}`);
       emailResponse = await resend.emails.send({
-        from: "Cover Artisan <onboarding@send.coverartisan.com>",
+        from: "Cover Artisan <onboarding@resend.dev>",
         to: [to],
         subject: "Welcome to Cover Artisan! 🎨 Your creative journey starts now",
         html: getWelcomeEmailTemplate(data?.name || ''),
@@ -269,7 +269,7 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (type === 'purchase_confirmation' && data) {
       console.log(`Sending purchase confirmation email to: ${to} for ${data.credits} credits`);
       emailResponse = await resend.emails.send({
-        from: "Cover Artisan <purchases@send.coverartisan.com>",
+        from: "Cover Artisan <purchases@resend.dev>",
         to: [to],
         subject: `Payment Confirmed! ${data.credits} Credits Added to Your Account ✅`,
         html: getPurchaseConfirmationTemplate({
