@@ -9,10 +9,12 @@ const corsHeaders = {
 
 async function sendPurchaseConfirmationEmail(email: string, credits: number) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "no-reply@example.com";
+  const from = Deno.env.get("RESEND_FROM_EMAIL");
   if (!apiKey) {
-    console.error("Missing RESEND_API_KEY");
-    return;
+    throw new Error("Missing RESEND_API_KEY");
+  }
+  if (!from) {
+    throw new Error("Missing RESEND_FROM_EMAIL");
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -30,7 +32,8 @@ async function sendPurchaseConfirmationEmail(email: string, credits: number) {
   });
 
   if (!response.ok) {
-    console.error("Failed to send confirmation email:", await response.text());
+    const errorText = await response.text();
+    throw new Error(`Failed to send confirmation email: ${errorText}`);
   }
 }
 
@@ -111,12 +114,8 @@ serve(async (req) => {
 
         console.log(`Added ${creditsToAdd} credits to user ${user.id}`);
 
-        try {
-          if (user.email) {
-            await sendPurchaseConfirmationEmail(user.email, creditsToAdd);
-          }
-        } catch (emailError) {
-          console.error("Error sending confirmation email:", emailError);
+        if (user.email) {
+          await sendPurchaseConfirmationEmail(user.email, creditsToAdd);
         }
 
         return new Response(JSON.stringify({
