@@ -7,10 +7,12 @@ const corsHeaders = {
 
 async function sendWelcomeEmail(email: string) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "no-reply@example.com";
+  const from = Deno.env.get("RESEND_FROM_EMAIL");
   if (!apiKey) {
-    console.error("Missing RESEND_API_KEY");
-    return;
+    throw new Error("Missing RESEND_API_KEY");
+  }
+  if (!from) {
+    throw new Error("Missing RESEND_FROM_EMAIL");
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -28,7 +30,8 @@ async function sendWelcomeEmail(email: string) {
   });
 
   if (!response.ok) {
-    console.error("Failed to send welcome email:", await response.text());
+    const errorText = await response.text();
+    throw new Error(`Failed to send welcome email: ${errorText}`);
   }
 }
 
