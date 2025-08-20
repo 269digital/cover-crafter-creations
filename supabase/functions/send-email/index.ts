@@ -245,6 +245,17 @@ const handler = async (req: Request): Promise<Response> => {
         html,
       });
 
+      if ((emailResponse as any)?.error) {
+        console.error("Auth email send error:", (emailResponse as any).error);
+        return new Response(
+          JSON.stringify({ success: false, error: (emailResponse as any).error.message || 'Email send failed' }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
       console.log("Auth email sent:", emailResponse);
 
       return new Response(JSON.stringify({ success: true }), {
@@ -280,6 +291,17 @@ const handler = async (req: Request): Promise<Response> => {
       });
     } else {
       throw new Error('Invalid email type or missing data');
+    }
+
+    if ((emailResponse as any)?.error) {
+      console.error("Error sending email:", (emailResponse as any).error);
+      return new Response(
+        JSON.stringify({ success: false, error: (emailResponse as any).error.message || 'Email send failed' }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     console.log("Email sent successfully:", emailResponse);
