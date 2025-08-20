@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -167,23 +168,106 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Detect Supabase Auth Email Hook (Standard Webhooks) by signature header
+    const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET") ?? "";
+    const hasWebhookSignature =
+      req.headers.has("webhook-signature") || req.headers.has("Webhook-Signature");
+
+    if (hasWebhookSignature && hookSecret) {
+      const payload = await req.text();
+      const headers = Object.fromEntries(req.headers);
+
+      const wh = new Webhook(hookSecret);
+      let verified: any;
+      try {
+        verified = wh.verify(payload, headers);
+      } catch (e) {
+        console.error("Auth email hook signature verification failed:", e);
+        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      const {
+        user,
+        email_data: { token, token_hash, redirect_to, email_action_type },
+      } = verified as {
+        user: { email: string };
+        email_data: {
+          token: string;
+          token_hash: string;
+          redirect_to: string;
+          email_action_type: string;
+        };
+      };
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const verifyLink = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(
+        redirect_to || ""
+      )}`;
+
+      const subjectMap: Record<string, string> = {
+        signup: "Confirm your email for Cover Artisan",
+        magiclink: "Your Cover Artisan sign-in link",
+        recovery: "Reset your Cover Artisan password",
+        email_change: "Confirm your email change",
+        invite: "You're invited to Cover Artisan",
+      };
+      const subject = subjectMap[email_action_type] || "Your Cover Artisan authentication link";
+
+      const html = `
+        <html>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f8fafc; padding:24px;">
+            <div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+              <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:24px;color:#fff">
+                <h1 style="margin:0;font-size:22px;">${subject}</h1>
+              </div>
+              <div style="padding:24px;color:#1f2937;">
+                <p style="margin-top:0;margin-bottom:16px;">Click the button below to continue:</p>
+                <p style="text-align:center;margin:24px 0;">
+                  <a href="${verifyLink}" style="background:#6366f1;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block;font-weight:600">Continue</a>
+                </p>
+                <p style="margin:16px 0;">Or use this one-time code:</p>
+                <code style="display:inline-block;padding:12px 16px;background:#f3f4f6;border-radius:8px;border:1px solid #e5e7eb;font-weight:700;letter-spacing:2px;">${token}</code>
+                <p style="margin-top:24px;color:#6b7280;font-size:12px;">If you didn’t request this, you can ignore this email.</p>
+              </div>
+              <div style="background:#f9fafb;padding:16px;text-align:center;color:#9ca3af;font-size:12px;border-top:1px solid #e5e7eb;">Cover Artisan</div>
+            </div>
+          </body>
+        </html>
+      `;
+
+      const emailResponse = await resend.emails.send({
+        from: "Cover Artisan <verify@send.coverartisan.com>",
+        to: [user.email],
+        subject,
+        html,
+      });
+
+      console.log("Auth email sent:", emailResponse);
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Fallback: JSON-based flows (welcome, purchase confirmation)
     const { type, to, data }: EmailRequest = await req.json();
 
     let emailResponse;
 
     if (type === 'welcome') {
       console.log(`Sending welcome email to: ${to}`);
-      
       emailResponse = await resend.emails.send({
         from: "Cover Artisan <onboarding@send.coverartisan.com>",
         to: [to],
         subject: "Welcome to Cover Artisan! 🎨 Your creative journey starts now",
         html: getWelcomeEmailTemplate(data?.name || ''),
       });
-    } 
-    else if (type === 'purchase_confirmation' && data) {
+    } else if (type === 'purchase_confirmation' && data) {
       console.log(`Sending purchase confirmation email to: ${to} for ${data.credits} credits`);
-      
       emailResponse = await resend.emails.send({
         from: "Cover Artisan <purchases@send.coverartisan.com>",
         to: [to],
@@ -194,8 +278,7 @@ const handler = async (req: Request): Promise<Response> => {
           transactionId: data.transactionId || 'N/A'
         }),
       });
-    }
-    else {
+    } else {
       throw new Error('Invalid email type or missing data');
     }
 
