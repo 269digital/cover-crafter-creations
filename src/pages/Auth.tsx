@@ -164,7 +164,7 @@ const Auth = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'https://coverartisan.com/studio'
+        redirectTo: `${window.location.origin}/studio`
       }
     });
 

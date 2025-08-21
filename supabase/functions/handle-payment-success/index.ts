@@ -84,35 +84,6 @@ serve(async (req) => {
 
         console.log(`Added ${creditsToAdd} credits to user ${user.id}`);
 
-        // Send purchase confirmation email
-        try {
-          const emailResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
-            },
-            body: JSON.stringify({
-              type: 'purchase_confirmation',
-              to: user.email,
-              data: {
-                credits: creditsToAdd,
-                amount: session.amount_total || 0,
-                transactionId: session.id
-              }
-            })
-          });
-
-          if (!emailResponse.ok) {
-            console.error('Failed to send purchase confirmation email:', await emailResponse.text());
-          } else {
-            console.log('Purchase confirmation email sent successfully');
-          }
-        } catch (emailError) {
-          console.error('Error sending purchase confirmation email:', emailError);
-          // Don't fail the payment process if email fails
-        }
-
         return new Response(JSON.stringify({ 
           success: true, 
           credits: creditsToAdd,
