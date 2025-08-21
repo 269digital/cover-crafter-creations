@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { Resend } from "npm:resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,6 +84,26 @@ serve(async (req) => {
         }
 
         console.log(`Added ${creditsToAdd} credits to user ${user.id}`);
+
+        // Send confirmation email with Resend (non-blocking)
+        try {
+          const resend = new Resend(Deno.env.get("RESEND_API_KEY") ?? "");
+          if (user.email) {
+            await resend.emails.send({
+              from: "Cover Artisan <onboarding@resend.dev>",
+              to: [user.email],
+              subject: "Payment received — credits added",
+              html: `
+                <h2>Thanks for your purchase!</h2>
+                <p>We added <strong>${creditsToAdd}</strong> credits to your account.</p>
+                <p>Your new balance: <strong>${newCredits}</strong> credits.</p>
+                <p>Happy creating!<br/>— Cover Artisan</p>
+              `,
+            });
+          }
+        } catch (emailErr) {
+          console.error("Failed to send confirmation email:", emailErr);
+        }
 
         return new Response(JSON.stringify({ 
           success: true, 
